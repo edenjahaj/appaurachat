@@ -10,11 +10,21 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AppRouteImport } from './routes/app'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AppIndexRouteImport } from './routes/app.index'
+import { Route as AppStoriesRouteImport } from './routes/app.stories'
+import { Route as AppPeopleRouteImport } from './routes/app.people'
+import { Route as AppCConversationIdRouteImport } from './routes/app.c.$conversationId'
 
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AppRoute = AppRouteImport.update({
+  id: '/app',
+  path: '/app',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -22,30 +32,86 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AppIndexRoute = AppIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppStoriesRoute = AppStoriesRouteImport.update({
+  id: '/stories',
+  path: '/stories',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppPeopleRoute = AppPeopleRouteImport.update({
+  id: '/people',
+  path: '/people',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppCConversationIdRoute = AppCConversationIdRouteImport.update({
+  id: '/c/$conversationId',
+  path: '/c/$conversationId',
+  getParentRoute: () => AppRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/app': typeof AppRouteWithChildren
   '/auth': typeof AuthRoute
+  '/app/people': typeof AppPeopleRoute
+  '/app/stories': typeof AppStoriesRoute
+  '/app/': typeof AppIndexRoute
+  '/app/c/$conversationId': typeof AppCConversationIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/app/people': typeof AppPeopleRoute
+  '/app/stories': typeof AppStoriesRoute
+  '/app': typeof AppIndexRoute
+  '/app/c/$conversationId': typeof AppCConversationIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/app': typeof AppRouteWithChildren
   '/auth': typeof AuthRoute
+  '/app/people': typeof AppPeopleRoute
+  '/app/stories': typeof AppStoriesRoute
+  '/app/': typeof AppIndexRoute
+  '/app/c/$conversationId': typeof AppCConversationIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth'
+  fullPaths:
+    | '/'
+    | '/app'
+    | '/auth'
+    | '/app/people'
+    | '/app/stories'
+    | '/app/'
+    | '/app/c/$conversationId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth'
-  id: '__root__' | '/' | '/auth'
+  to:
+    | '/'
+    | '/auth'
+    | '/app/people'
+    | '/app/stories'
+    | '/app'
+    | '/app/c/$conversationId'
+  id:
+    | '__root__'
+    | '/'
+    | '/app'
+    | '/auth'
+    | '/app/people'
+    | '/app/stories'
+    | '/app/'
+    | '/app/c/$conversationId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AppRoute: typeof AppRouteWithChildren
   AuthRoute: typeof AuthRoute
 }
 
@@ -58,6 +124,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/app': {
+      id: '/app'
+      path: '/app'
+      fullPath: '/app'
+      preLoaderRoute: typeof AppRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -65,11 +138,56 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/app/': {
+      id: '/app/'
+      path: '/'
+      fullPath: '/app/'
+      preLoaderRoute: typeof AppIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/stories': {
+      id: '/app/stories'
+      path: '/stories'
+      fullPath: '/app/stories'
+      preLoaderRoute: typeof AppStoriesRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/people': {
+      id: '/app/people'
+      path: '/people'
+      fullPath: '/app/people'
+      preLoaderRoute: typeof AppPeopleRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/c/$conversationId': {
+      id: '/app/c/$conversationId'
+      path: '/c/$conversationId'
+      fullPath: '/app/c/$conversationId'
+      preLoaderRoute: typeof AppCConversationIdRouteImport
+      parentRoute: typeof AppRoute
+    }
   }
 }
 
+interface AppRouteChildren {
+  AppPeopleRoute: typeof AppPeopleRoute
+  AppStoriesRoute: typeof AppStoriesRoute
+  AppIndexRoute: typeof AppIndexRoute
+  AppCConversationIdRoute: typeof AppCConversationIdRoute
+}
+
+const AppRouteChildren: AppRouteChildren = {
+  AppPeopleRoute: AppPeopleRoute,
+  AppStoriesRoute: AppStoriesRoute,
+  AppIndexRoute: AppIndexRoute,
+  AppCConversationIdRoute: AppCConversationIdRoute,
+}
+
+const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AppRoute: AppRouteWithChildren,
   AuthRoute: AuthRoute,
 }
 export const routeTree = rootRouteImport
