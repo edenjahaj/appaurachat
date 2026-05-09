@@ -8,6 +8,7 @@ import {
 } from "@tanstack/react-router";
 import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider } from "@/lib/auth-context";
+import { RealtimeProvider } from "@/lib/realtime-context";
 import { ClientOnly } from "@/components/ClientOnly";
 
 import appCss from "../styles.css?url";
