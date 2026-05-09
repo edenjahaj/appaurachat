@@ -17,6 +17,7 @@ interface Person {
 
 export function PeopleList() {
   const { user } = useAuth();
+  const { isOnline } = useRealtime();
   const navigate = useNavigate();
   const [people, setPeople] = useState<Person[]>([]);
   const [q, setQ] = useState("");
