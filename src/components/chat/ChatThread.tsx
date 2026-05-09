@@ -188,35 +188,54 @@ export function ChatThread({ conversationId }: { conversationId: string }) {
 
   const send = async () => {
     const content = text.trim();
-    if (!content || !user || !conversationId) return;
+    if ((!content && !pendingImage) || !user || !conversationId) return;
+
+    let image_url: string | null = null;
+    if (pendingImage) {
+      setUploading(true);
+      const ext = pendingImage.file.name.split(".").pop() ?? "jpg";
+      const path = `${user.id}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+      const { error: upErr } = await supabase.storage.from("chat-media").upload(path, pendingImage.file, { upsert: false, contentType: pendingImage.file.type });
+      setUploading(false);
+      if (upErr) { toast.error(upErr.message); return; }
+      image_url = supabase.storage.from("chat-media").getPublicUrl(path).data.publicUrl;
+    }
+
     const tempId = `temp-${Date.now()}`;
     const optimistic: Message = {
       id: tempId,
       conversation_id: conversationId,
       sender_id: user.id,
-      content,
+      content: content || null,
+      image_url,
       created_at: new Date().toISOString(),
       pending: true,
     };
     setMessages((prev) => [...prev, optimistic]);
     setText("");
+    setPendingImage(null);
     scrollToBottom();
     broadcastTyping(false);
 
     const { error, data } = await supabase
       .from("messages")
-      .insert({ conversation_id: conversationId, sender_id: user.id, content })
+      .insert({ conversation_id: conversationId, sender_id: user.id, content: content || null, image_url })
       .select()
       .single();
 
     if (error) {
       setMessages((prev) => prev.filter((m) => m.id !== tempId));
-      // surface
-      const { toast } = await import("sonner");
       toast.error(error.message);
     } else if (data) {
       setMessages((prev) => prev.map((m) => (m.id === tempId ? (data as Message) : m)));
     }
+  };
+
+  const onPickFile = (f: File | null) => {
+    if (!f) return;
+    if (!f.type.startsWith("image/")) { toast.error("Please pick an image"); return; }
+    if (f.size > 5 * 1024 * 1024) { toast.error("Max 5MB"); return; }
+    setPendingImage({ file: f, preview: URL.createObjectURL(f) });
   };
 
   const memberMap = new Map(members.map((m) => [m.id, m]));
