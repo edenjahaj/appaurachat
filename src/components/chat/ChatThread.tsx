@@ -395,16 +395,21 @@ function MessageGroup({
                   <span className="text-[11px] text-muted-foreground mb-0.5 px-2">{sender.display_name}</span>
                 )}
                 <div
-                  className={`px-4 py-2.5 text-[15px] leading-snug shadow-[var(--shadow-bubble)] animate-bubble-in whitespace-pre-wrap break-words ${
+                  className={`overflow-hidden text-[15px] leading-snug shadow-[var(--shadow-bubble)] animate-bubble-in whitespace-pre-wrap break-words ${
                     isMe ? "bg-bubble-sent text-bubble-sent-foreground" : "bg-bubble-received text-bubble-received-foreground"
-                  } ${m.pending ? "opacity-70" : ""}`}
+                  } ${m.pending ? "opacity-70" : ""} ${m.image_url && !m.content ? "p-1" : "px-4 py-2.5"}`}
                   style={{
                     borderRadius: isMe
                       ? `20px 20px ${sameAsNext ? "6px" : "20px"} 20px`
                       : `20px 20px 20px ${sameAsNext ? "6px" : "20px"}`,
                   }}
                 >
-                  {m.content}
+                  {m.image_url && (
+                    <a href={m.image_url} target="_blank" rel="noreferrer">
+                      <img src={m.image_url} alt="" className="rounded-xl max-h-72 object-cover" loading="lazy" />
+                    </a>
+                  )}
+                  {m.content && <div className={m.image_url ? "mt-2 px-3 pb-1" : ""}>{m.content}</div>}
                 </div>
                 {!sameAsNext && (
                   <span className="text-[10px] text-muted-foreground mt-0.5 px-2">{format(d, "h:mm a")}</span>
