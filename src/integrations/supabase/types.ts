@@ -18,16 +18,19 @@ export type Database = {
         Row: {
           conversation_id: string
           joined_at: string
+          last_read_at: string
           user_id: string
         }
         Insert: {
           conversation_id: string
           joined_at?: string
+          last_read_at?: string
           user_id: string
         }
         Update: {
           conversation_id?: string
           joined_at?: string
+          last_read_at?: string
           user_id?: string
         }
         Relationships: [
@@ -72,27 +75,30 @@ export type Database = {
       }
       messages: {
         Row: {
-          content: string
+          content: string | null
           conversation_id: string
           created_at: string
           edited_at: string | null
           id: string
+          image_url: string | null
           sender_id: string
         }
         Insert: {
-          content: string
+          content?: string | null
           conversation_id: string
           created_at?: string
           edited_at?: string | null
           id?: string
+          image_url?: string | null
           sender_id: string
         }
         Update: {
-          content?: string
+          content?: string | null
           conversation_id?: string
           created_at?: string
           edited_at?: string | null
           id?: string
+          image_url?: string | null
           sender_id?: string
         }
         Relationships: [
@@ -175,6 +181,10 @@ export type Database = {
       is_conversation_member: {
         Args: { _conversation_id: string; _user_id: string }
         Returns: boolean
+      }
+      mark_conversation_read: {
+        Args: { _conversation_id: string }
+        Returns: undefined
       }
     }
     Enums: {

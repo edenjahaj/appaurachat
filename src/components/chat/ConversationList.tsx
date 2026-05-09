@@ -2,8 +2,9 @@ import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
+import { useRealtime } from "@/lib/realtime-context";
 import { Avatar } from "./Avatar";
-import { Plus, Search } from "lucide-react";
+import { Plus, Search, Image as ImageIcon } from "lucide-react";
 import { formatDistanceToNowStrict } from "date-fns";
 import { CreateGroupDialog } from "./CreateGroupDialog";
 
@@ -13,11 +14,12 @@ interface ConvoRow {
   name: string | null;
   last_message_at: string;
   members: { user_id: string; profile: { display_name: string; username: string; avatar_url: string | null } | null }[];
-  last_message: { content: string; created_at: string; sender_id: string } | null;
+  last_message: { content: string | null; image_url: string | null; created_at: string; sender_id: string } | null;
 }
 
 export function ConversationList({ activeId }: { activeId?: string }) {
   const { user } = useAuth();
+  const { unread, isOnline } = useRealtime();
   const [convos, setConvos] = useState<ConvoRow[]>([]);
   const [q, setQ] = useState("");
   const [loading, setLoading] = useState(true);
@@ -56,12 +58,12 @@ export function ConversationList({ activeId }: { activeId?: string }) {
     const profileMap = new Map((profiles ?? []).map((p) => [p.id, p]));
 
     // last message per conversation (one query)
-    const lastMessages: Record<string, { content: string; created_at: string; sender_id: string }> = {};
+    const lastMessages: Record<string, { content: string | null; image_url: string | null; created_at: string; sender_id: string }> = {};
     await Promise.all(
       ids.map(async (cid) => {
         const { data } = await supabase
           .from("messages")
-          .select("content, created_at, sender_id")
+          .select("content, image_url, created_at, sender_id")
           .eq("conversation_id", cid)
           .order("created_at", { ascending: false })
           .limit(1);
@@ -147,9 +149,17 @@ export function ConversationList({ activeId }: { activeId?: string }) {
             const avatarName = title;
             const avatarSrc = c.is_group ? null : others[0]?.profile?.avatar_url ?? null;
             const last = c.last_message;
-            const lastText = last ? (last.sender_id === user?.id ? `You: ${last.content}` : last.content) : "Say hi 👋";
+            const lastPreview = last
+              ? last.image_url
+                ? "📷 Photo"
+                : last.content ?? ""
+              : "Say hi 👋";
+            const lastText = last && last.sender_id === user?.id ? `You: ${lastPreview}` : lastPreview;
             const time = last ? formatDistanceToNowStrict(new Date(last.created_at), { addSuffix: false }) : "";
             const active = c.id === activeId;
+            const count = unread[c.id] ?? 0;
+            const otherId = others[0]?.user_id;
+            const online = !c.is_group && otherId ? isOnline(otherId) : false;
 
             return (
               <Link
@@ -160,13 +170,26 @@ export function ConversationList({ activeId }: { activeId?: string }) {
                   active ? "bg-accent" : "hover:bg-secondary"
                 }`}
               >
-                <Avatar name={avatarName} src={avatarSrc} size={48} />
+                <div className="relative shrink-0">
+                  <Avatar name={avatarName} src={avatarSrc} size={48} />
+                  {online && <span className="absolute bottom-0 right-0 size-3 rounded-full bg-emerald-500 ring-2 ring-card" />}
+                </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-2">
-                    <span className="font-semibold truncate">{title}</span>
-                    <span className="text-[10px] text-muted-foreground shrink-0">{time}</span>
+                    <span className={`truncate ${count > 0 ? "font-bold" : "font-semibold"}`}>{title}</span>
+                    <span className={`text-[10px] shrink-0 ${count > 0 ? "text-primary font-semibold" : "text-muted-foreground"}`}>{time}</span>
                   </div>
-                  <p className="text-sm text-muted-foreground truncate">{lastText}</p>
+                  <div className="flex items-center justify-between gap-2">
+                    <p className={`text-sm truncate ${count > 0 ? "text-foreground font-medium" : "text-muted-foreground"}`}>
+                      {last?.image_url && <ImageIcon className="inline size-3.5 mr-1 -mt-0.5" />}
+                      {lastText}
+                    </p>
+                    {count > 0 && (
+                      <span className="shrink-0 min-w-[20px] h-5 px-1.5 rounded-full bg-primary text-primary-foreground text-[11px] font-bold grid place-items-center">
+                        {count > 99 ? "99+" : count}
+                      </span>
+                    )}
+                  </div>
                 </div>
               </Link>
             );

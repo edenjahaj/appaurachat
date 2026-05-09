@@ -1,10 +1,12 @@
 import { Link, useLocation } from "@tanstack/react-router";
 import { MessageCircle, Users, Sparkles, LogOut } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
+import { useRealtime } from "@/lib/realtime-context";
 import { Avatar } from "./Avatar";
 
 export function Sidebar() {
   const { profile, signOut } = useAuth();
+  const { totalUnread } = useRealtime();
   const loc = useLocation();
   const isActive = (p: string) => loc.pathname === p || loc.pathname.startsWith(p + "/");
 
@@ -31,6 +33,11 @@ export function Sidebar() {
             title={it.label}
           >
             <it.icon className="size-5" />
+            {it.label === "Chats" && totalUnread > 0 && (
+              <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-primary text-primary-foreground text-[10px] font-bold grid place-items-center ring-2 ring-card">
+                {totalUnread > 99 ? "99+" : totalUnread}
+              </span>
+            )}
             {active && <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 rounded-r-full bg-primary" />}
           </Link>
         );

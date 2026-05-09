@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
+import { useRealtime } from "@/lib/realtime-context";
 import { Avatar } from "./Avatar";
 import { MessageCircle, Search } from "lucide-react";
 import { toast } from "sonner";
@@ -16,6 +17,7 @@ interface Person {
 
 export function PeopleList() {
   const { user } = useAuth();
+  const { isOnline } = useRealtime();
   const navigate = useNavigate();
   const [people, setPeople] = useState<Person[]>([]);
   const [q, setQ] = useState("");
@@ -73,10 +75,17 @@ export function PeopleList() {
         <div className="space-y-2">
           {filtered.map((p) => (
             <div key={p.id} className="flex items-center gap-3 p-3 rounded-2xl bg-card border border-border hover:shadow-[var(--shadow-soft)] transition">
-              <Avatar name={p.display_name} src={p.avatar_url} size={48} />
+              <div className="relative">
+                <Avatar name={p.display_name} src={p.avatar_url} size={48} />
+                {isOnline(p.id) && <span className="absolute bottom-0 right-0 size-3 rounded-full bg-emerald-500 ring-2 ring-card" />}
+              </div>
               <div className="flex-1 min-w-0">
                 <div className="font-semibold truncate">{p.display_name}</div>
-                <div className="text-xs text-muted-foreground truncate">@{p.username}{p.bio ? ` • ${p.bio}` : ""}</div>
+                <div className="text-xs text-muted-foreground truncate">
+                  @{p.username}
+                  {isOnline(p.id) && <span className="ml-2 text-emerald-600 font-medium">• Online</span>}
+                  {p.bio ? ` • ${p.bio}` : ""}
+                </div>
               </div>
               <button
                 onClick={() => openChat(p)}

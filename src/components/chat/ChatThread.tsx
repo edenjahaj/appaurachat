@@ -2,16 +2,19 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
+import { useRealtime } from "@/lib/realtime-context";
 import { Avatar } from "./Avatar";
-import { Send, ArrowLeft } from "lucide-react";
+import { Send, ArrowLeft, ImagePlus, X } from "lucide-react";
 import { format, isToday, isYesterday } from "date-fns";
+import { toast } from "sonner";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 
 interface Message {
   id: string;
   conversation_id: string;
   sender_id: string;
-  content: string;
+  content: string | null;
+  image_url: string | null;
   created_at: string;
   pending?: boolean;
 }
@@ -25,16 +28,26 @@ interface MemberProfile {
 
 export function ChatThread({ conversationId }: { conversationId: string }) {
   const { user } = useAuth();
+  const { markRead, setActiveConversationId, isOnline } = useRealtime();
   const navigate = useNavigate();
   const [messages, setMessages] = useState<Message[]>([]);
   const [members, setMembers] = useState<MemberProfile[]>([]);
   const [convo, setConvo] = useState<{ is_group: boolean; name: string | null } | null>(null);
   const [text, setText] = useState("");
   const [loading, setLoading] = useState(true);
-  const [typing, setTyping] = useState<Record<string, string>>({}); // userId -> displayName
+  const [typing, setTyping] = useState<Record<string, string>>({});
+  const [pendingImage, setPendingImage] = useState<{ file: File; preview: string } | null>(null);
+  const [uploading, setUploading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const channelRef = useRef<RealtimeChannel | null>(null);
   const typingTimeoutRef = useRef<Record<string, number>>({});
+
+  // Track active conversation for notifications
+  useEffect(() => {
+    setActiveConversationId(conversationId);
+    return () => setActiveConversationId(null);
+  }, [conversationId, setActiveConversationId]);
 
   const scrollToBottom = (smooth = true) => {
     requestAnimationFrame(() => {
@@ -71,7 +84,7 @@ export function ChatThread({ conversationId }: { conversationId: string }) {
 
       const { data: msgs } = await supabase
         .from("messages")
-        .select("id, conversation_id, sender_id, content, created_at")
+        .select("id, conversation_id, sender_id, content, image_url, created_at")
         .eq("conversation_id", conversationId)
         .order("created_at", { ascending: true })
         .limit(200);
@@ -79,6 +92,7 @@ export function ChatThread({ conversationId }: { conversationId: string }) {
         setMessages((msgs ?? []) as Message[]);
         setLoading(false);
         scrollToBottom(false);
+        markRead(conversationId);
       }
     })();
 
@@ -174,35 +188,54 @@ export function ChatThread({ conversationId }: { conversationId: string }) {
 
   const send = async () => {
     const content = text.trim();
-    if (!content || !user || !conversationId) return;
+    if ((!content && !pendingImage) || !user || !conversationId) return;
+
+    let image_url: string | null = null;
+    if (pendingImage) {
+      setUploading(true);
+      const ext = pendingImage.file.name.split(".").pop() ?? "jpg";
+      const path = `${user.id}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+      const { error: upErr } = await supabase.storage.from("chat-media").upload(path, pendingImage.file, { upsert: false, contentType: pendingImage.file.type });
+      setUploading(false);
+      if (upErr) { toast.error(upErr.message); return; }
+      image_url = supabase.storage.from("chat-media").getPublicUrl(path).data.publicUrl;
+    }
+
     const tempId = `temp-${Date.now()}`;
     const optimistic: Message = {
       id: tempId,
       conversation_id: conversationId,
       sender_id: user.id,
-      content,
+      content: content || null,
+      image_url,
       created_at: new Date().toISOString(),
       pending: true,
     };
     setMessages((prev) => [...prev, optimistic]);
     setText("");
+    setPendingImage(null);
     scrollToBottom();
     broadcastTyping(false);
 
     const { error, data } = await supabase
       .from("messages")
-      .insert({ conversation_id: conversationId, sender_id: user.id, content })
+      .insert({ conversation_id: conversationId, sender_id: user.id, content: content || null, image_url })
       .select()
       .single();
 
     if (error) {
       setMessages((prev) => prev.filter((m) => m.id !== tempId));
-      // surface
-      const { toast } = await import("sonner");
       toast.error(error.message);
     } else if (data) {
       setMessages((prev) => prev.map((m) => (m.id === tempId ? (data as Message) : m)));
     }
+  };
+
+  const onPickFile = (f: File | null) => {
+    if (!f) return;
+    if (!f.type.startsWith("image/")) { toast.error("Please pick an image"); return; }
+    if (f.size > 5 * 1024 * 1024) { toast.error("Max 5MB"); return; }
+    setPendingImage({ file: f, preview: URL.createObjectURL(f) });
   };
 
   const memberMap = new Map(members.map((m) => [m.id, m]));
@@ -220,15 +253,22 @@ export function ChatThread({ conversationId }: { conversationId: string }) {
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <header className="flex items-center gap-3 px-4 md:px-6 py-3 border-b border-border bg-card">
+      <header className="flex items-center gap-3 px-4 md:px-6 py-3 border-b border-border bg-card/80 backdrop-blur sticky top-0 z-10">
         <button onClick={() => navigate({ to: "/app" })} className="md:hidden size-9 rounded-full grid place-items-center hover:bg-secondary">
           <ArrowLeft className="size-5" />
         </button>
-        <Avatar name={title} src={avatarSrc} size={40} />
+        <div className="relative">
+          <Avatar name={title} src={avatarSrc} size={40} />
+          {!convo?.is_group && others[0] && isOnline(others[0].id) && (
+            <span className="absolute bottom-0 right-0 size-2.5 rounded-full bg-emerald-500 ring-2 ring-card" />
+          )}
+        </div>
         <div className="min-w-0">
           <div className="font-semibold truncate">{title}</div>
           <div className="text-xs text-muted-foreground truncate">
-            {typingNames.length > 0 ? <span className="text-primary">typing…</span> : subtitle}
+            {typingNames.length > 0
+              ? <span className="text-primary">typing…</span>
+              : !convo?.is_group && others[0] && isOnline(others[0].id) ? <span className="text-emerald-600">Online</span> : subtitle}
           </div>
         </div>
       </header>
@@ -256,22 +296,43 @@ export function ChatThread({ conversationId }: { conversationId: string }) {
       </div>
 
       {/* Composer */}
-      <div className="border-t border-border bg-card px-3 md:px-6 py-3">
+      <div className="border-t border-border bg-card px-3 md:px-6 py-3 pb-[max(env(safe-area-inset-bottom),0.75rem)]">
+        {pendingImage && (
+          <div className="mb-2 relative inline-block">
+            <img src={pendingImage.preview} alt="preview" className="h-24 rounded-xl object-cover" />
+            <button
+              type="button"
+              onClick={() => setPendingImage(null)}
+              className="absolute -top-2 -right-2 size-6 rounded-full bg-foreground text-background grid place-items-center"
+            >
+              <X className="size-3.5" />
+            </button>
+          </div>
+        )}
         <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            send();
-          }}
+          onSubmit={(e) => { e.preventDefault(); send(); }}
           className="flex items-end gap-2"
         >
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => { onPickFile(e.target.files?.[0] ?? null); e.target.value = ""; }}
+          />
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            className="size-11 rounded-full bg-secondary text-foreground grid place-items-center hover:bg-accent transition shrink-0"
+            title="Attach photo"
+          >
+            <ImagePlus className="size-5" />
+          </button>
           <textarea
             value={text}
             onChange={(e) => onChange(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                send();
-              }
+              if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); }
             }}
             rows={1}
             placeholder="Message"
@@ -279,7 +340,7 @@ export function ChatThread({ conversationId }: { conversationId: string }) {
           />
           <button
             type="submit"
-            disabled={!text.trim()}
+            disabled={(!text.trim() && !pendingImage) || uploading}
             className="size-11 rounded-full bg-primary text-primary-foreground grid place-items-center disabled:opacity-40 hover:opacity-90 transition shrink-0"
           >
             <Send className="size-5" />
@@ -334,16 +395,21 @@ function MessageGroup({
                   <span className="text-[11px] text-muted-foreground mb-0.5 px-2">{sender.display_name}</span>
                 )}
                 <div
-                  className={`px-4 py-2.5 text-[15px] leading-snug shadow-[var(--shadow-bubble)] animate-bubble-in whitespace-pre-wrap break-words ${
+                  className={`overflow-hidden text-[15px] leading-snug shadow-[var(--shadow-bubble)] animate-bubble-in whitespace-pre-wrap break-words ${
                     isMe ? "bg-bubble-sent text-bubble-sent-foreground" : "bg-bubble-received text-bubble-received-foreground"
-                  } ${m.pending ? "opacity-70" : ""}`}
+                  } ${m.pending ? "opacity-70" : ""} ${m.image_url && !m.content ? "p-1" : "px-4 py-2.5"}`}
                   style={{
                     borderRadius: isMe
                       ? `20px 20px ${sameAsNext ? "6px" : "20px"} 20px`
                       : `20px 20px 20px ${sameAsNext ? "6px" : "20px"}`,
                   }}
                 >
-                  {m.content}
+                  {m.image_url && (
+                    <a href={m.image_url} target="_blank" rel="noreferrer">
+                      <img src={m.image_url} alt="" className="rounded-xl max-h-72 object-cover" loading="lazy" />
+                    </a>
+                  )}
+                  {m.content && <div className={m.image_url ? "mt-2 px-3 pb-1" : ""}>{m.content}</div>}
                 </div>
                 {!sameAsNext && (
                   <span className="text-[10px] text-muted-foreground mt-0.5 px-2">{format(d, "h:mm a")}</span>

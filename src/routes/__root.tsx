@@ -8,6 +8,7 @@ import {
 } from "@tanstack/react-router";
 import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider } from "@/lib/auth-context";
+import { RealtimeProvider } from "@/lib/realtime-context";
 import { ClientOnly } from "@/components/ClientOnly";
 
 import appCss from "../styles.css?url";
@@ -81,8 +82,10 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       <ClientOnly>
         <AuthProvider>
-          <Outlet />
-          <Toaster position="top-center" richColors />
+          <RealtimeProvider>
+            <Outlet />
+            <Toaster position="top-center" richColors />
+          </RealtimeProvider>
         </AuthProvider>
       </ClientOnly>
     </QueryClientProvider>
