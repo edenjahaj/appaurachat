@@ -84,7 +84,7 @@ export function ChatThread({ conversationId }: { conversationId: string }) {
 
       const { data: msgs } = await supabase
         .from("messages")
-        .select("id, conversation_id, sender_id, content, created_at")
+        .select("id, conversation_id, sender_id, content, image_url, created_at")
         .eq("conversation_id", conversationId)
         .order("created_at", { ascending: true })
         .limit(200);
@@ -92,6 +92,7 @@ export function ChatThread({ conversationId }: { conversationId: string }) {
         setMessages((msgs ?? []) as Message[]);
         setLoading(false);
         scrollToBottom(false);
+        markRead(conversationId);
       }
     })();
 
