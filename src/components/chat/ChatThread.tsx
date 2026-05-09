@@ -2,16 +2,19 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
+import { useRealtime } from "@/lib/realtime-context";
 import { Avatar } from "./Avatar";
-import { Send, ArrowLeft } from "lucide-react";
+import { Send, ArrowLeft, ImagePlus, X } from "lucide-react";
 import { format, isToday, isYesterday } from "date-fns";
+import { toast } from "sonner";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 
 interface Message {
   id: string;
   conversation_id: string;
   sender_id: string;
-  content: string;
+  content: string | null;
+  image_url: string | null;
   created_at: string;
   pending?: boolean;
 }
