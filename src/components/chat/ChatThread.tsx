@@ -28,16 +28,26 @@ interface MemberProfile {
 
 export function ChatThread({ conversationId }: { conversationId: string }) {
   const { user } = useAuth();
+  const { markRead, setActiveConversationId, isOnline } = useRealtime();
   const navigate = useNavigate();
   const [messages, setMessages] = useState<Message[]>([]);
   const [members, setMembers] = useState<MemberProfile[]>([]);
   const [convo, setConvo] = useState<{ is_group: boolean; name: string | null } | null>(null);
   const [text, setText] = useState("");
   const [loading, setLoading] = useState(true);
-  const [typing, setTyping] = useState<Record<string, string>>({}); // userId -> displayName
+  const [typing, setTyping] = useState<Record<string, string>>({});
+  const [pendingImage, setPendingImage] = useState<{ file: File; preview: string } | null>(null);
+  const [uploading, setUploading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const channelRef = useRef<RealtimeChannel | null>(null);
   const typingTimeoutRef = useRef<Record<string, number>>({});
+
+  // Track active conversation for notifications
+  useEffect(() => {
+    setActiveConversationId(conversationId);
+    return () => setActiveConversationId(null);
+  }, [conversationId, setActiveConversationId]);
 
   const scrollToBottom = (smooth = true) => {
     requestAnimationFrame(() => {
