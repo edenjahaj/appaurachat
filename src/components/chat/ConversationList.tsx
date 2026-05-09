@@ -57,12 +57,12 @@ export function ConversationList({ activeId }: { activeId?: string }) {
     const profileMap = new Map((profiles ?? []).map((p) => [p.id, p]));
 
     // last message per conversation (one query)
-    const lastMessages: Record<string, { content: string; created_at: string; sender_id: string }> = {};
+    const lastMessages: Record<string, { content: string | null; image_url: string | null; created_at: string; sender_id: string }> = {};
     await Promise.all(
       ids.map(async (cid) => {
         const { data } = await supabase
           .from("messages")
-          .select("content, created_at, sender_id")
+          .select("content, image_url, created_at, sender_id")
           .eq("conversation_id", cid)
           .order("created_at", { ascending: false })
           .limit(1);
