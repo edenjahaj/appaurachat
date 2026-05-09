@@ -2,8 +2,9 @@ import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
+import { useRealtime } from "@/lib/realtime-context";
 import { Avatar } from "./Avatar";
-import { Plus, Search } from "lucide-react";
+import { Plus, Search, Image as ImageIcon } from "lucide-react";
 import { formatDistanceToNowStrict } from "date-fns";
 import { CreateGroupDialog } from "./CreateGroupDialog";
 
@@ -13,7 +14,7 @@ interface ConvoRow {
   name: string | null;
   last_message_at: string;
   members: { user_id: string; profile: { display_name: string; username: string; avatar_url: string | null } | null }[];
-  last_message: { content: string; created_at: string; sender_id: string } | null;
+  last_message: { content: string | null; image_url: string | null; created_at: string; sender_id: string } | null;
 }
 
 export function ConversationList({ activeId }: { activeId?: string }) {
