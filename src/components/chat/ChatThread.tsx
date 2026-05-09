@@ -253,15 +253,22 @@ export function ChatThread({ conversationId }: { conversationId: string }) {
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <header className="flex items-center gap-3 px-4 md:px-6 py-3 border-b border-border bg-card">
+      <header className="flex items-center gap-3 px-4 md:px-6 py-3 border-b border-border bg-card/80 backdrop-blur sticky top-0 z-10">
         <button onClick={() => navigate({ to: "/app" })} className="md:hidden size-9 rounded-full grid place-items-center hover:bg-secondary">
           <ArrowLeft className="size-5" />
         </button>
-        <Avatar name={title} src={avatarSrc} size={40} />
+        <div className="relative">
+          <Avatar name={title} src={avatarSrc} size={40} />
+          {!convo?.is_group && others[0] && isOnline(others[0].id) && (
+            <span className="absolute bottom-0 right-0 size-2.5 rounded-full bg-emerald-500 ring-2 ring-card" />
+          )}
+        </div>
         <div className="min-w-0">
           <div className="font-semibold truncate">{title}</div>
           <div className="text-xs text-muted-foreground truncate">
-            {typingNames.length > 0 ? <span className="text-primary">typing…</span> : subtitle}
+            {typingNames.length > 0
+              ? <span className="text-primary">typing…</span>
+              : !convo?.is_group && others[0] && isOnline(others[0].id) ? <span className="text-emerald-600">Online</span> : subtitle}
           </div>
         </div>
       </header>
