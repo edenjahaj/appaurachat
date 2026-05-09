@@ -296,22 +296,43 @@ export function ChatThread({ conversationId }: { conversationId: string }) {
       </div>
 
       {/* Composer */}
-      <div className="border-t border-border bg-card px-3 md:px-6 py-3">
+      <div className="border-t border-border bg-card px-3 md:px-6 py-3 pb-[max(env(safe-area-inset-bottom),0.75rem)]">
+        {pendingImage && (
+          <div className="mb-2 relative inline-block">
+            <img src={pendingImage.preview} alt="preview" className="h-24 rounded-xl object-cover" />
+            <button
+              type="button"
+              onClick={() => setPendingImage(null)}
+              className="absolute -top-2 -right-2 size-6 rounded-full bg-foreground text-background grid place-items-center"
+            >
+              <X className="size-3.5" />
+            </button>
+          </div>
+        )}
         <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            send();
-          }}
+          onSubmit={(e) => { e.preventDefault(); send(); }}
           className="flex items-end gap-2"
         >
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => { onPickFile(e.target.files?.[0] ?? null); e.target.value = ""; }}
+          />
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            className="size-11 rounded-full bg-secondary text-foreground grid place-items-center hover:bg-accent transition shrink-0"
+            title="Attach photo"
+          >
+            <ImagePlus className="size-5" />
+          </button>
           <textarea
             value={text}
             onChange={(e) => onChange(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                send();
-              }
+              if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); }
             }}
             rows={1}
             placeholder="Message"
@@ -319,7 +340,7 @@ export function ChatThread({ conversationId }: { conversationId: string }) {
           />
           <button
             type="submit"
-            disabled={!text.trim()}
+            disabled={(!text.trim() && !pendingImage) || uploading}
             className="size-11 rounded-full bg-primary text-primary-foreground grid place-items-center disabled:opacity-40 hover:opacity-90 transition shrink-0"
           >
             <Send className="size-5" />
