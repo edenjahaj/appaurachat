@@ -19,6 +19,7 @@ interface ConvoRow {
 
 export function ConversationList({ activeId }: { activeId?: string }) {
   const { user } = useAuth();
+  const { unread, isOnline } = useRealtime();
   const [convos, setConvos] = useState<ConvoRow[]>([]);
   const [q, setQ] = useState("");
   const [loading, setLoading] = useState(true);
