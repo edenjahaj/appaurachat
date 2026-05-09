@@ -1,10 +1,12 @@
 import { Link, useLocation } from "@tanstack/react-router";
 import { MessageCircle, Users, Sparkles, LogOut } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
+import { useRealtime } from "@/lib/realtime-context";
 import { Avatar } from "./Avatar";
 
 export function Sidebar() {
   const { profile, signOut } = useAuth();
+  const { totalUnread } = useRealtime();
   const loc = useLocation();
   const isActive = (p: string) => loc.pathname === p || loc.pathname.startsWith(p + "/");
 
