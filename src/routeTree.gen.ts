@@ -16,6 +16,7 @@ import { Route as AppIndexRouteImport } from './routes/app.index'
 import { Route as AppStoriesRouteImport } from './routes/app.stories'
 import { Route as AppPeopleRouteImport } from './routes/app.people'
 import { Route as AppClsRouteImport } from './routes/app.cls'
+import { Route as AppClsClassIdRouteImport } from './routes/app.cls.$classId'
 import { Route as AppCConversationIdRouteImport } from './routes/app.c.$conversationId'
 
 const AuthRoute = AuthRouteImport.update({
@@ -53,6 +54,11 @@ const AppClsRoute = AppClsRouteImport.update({
   path: '/cls',
   getParentRoute: () => AppRoute,
 } as any)
+const AppClsClassIdRoute = AppClsClassIdRouteImport.update({
+  id: '/$classId',
+  path: '/$classId',
+  getParentRoute: () => AppClsRoute,
+} as any)
 const AppCConversationIdRoute = AppCConversationIdRouteImport.update({
   id: '/c/$conversationId',
   path: '/c/$conversationId',
@@ -63,31 +69,34 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/app': typeof AppRouteWithChildren
   '/auth': typeof AuthRoute
-  '/app/cls': typeof AppClsRoute
+  '/app/cls': typeof AppClsRouteWithChildren
   '/app/people': typeof AppPeopleRoute
   '/app/stories': typeof AppStoriesRoute
   '/app/': typeof AppIndexRoute
   '/app/c/$conversationId': typeof AppCConversationIdRoute
+  '/app/cls/$classId': typeof AppClsClassIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
-  '/app/cls': typeof AppClsRoute
+  '/app/cls': typeof AppClsRouteWithChildren
   '/app/people': typeof AppPeopleRoute
   '/app/stories': typeof AppStoriesRoute
   '/app': typeof AppIndexRoute
   '/app/c/$conversationId': typeof AppCConversationIdRoute
+  '/app/cls/$classId': typeof AppClsClassIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/app': typeof AppRouteWithChildren
   '/auth': typeof AuthRoute
-  '/app/cls': typeof AppClsRoute
+  '/app/cls': typeof AppClsRouteWithChildren
   '/app/people': typeof AppPeopleRoute
   '/app/stories': typeof AppStoriesRoute
   '/app/': typeof AppIndexRoute
   '/app/c/$conversationId': typeof AppCConversationIdRoute
+  '/app/cls/$classId': typeof AppClsClassIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -100,6 +109,7 @@ export interface FileRouteTypes {
     | '/app/stories'
     | '/app/'
     | '/app/c/$conversationId'
+    | '/app/cls/$classId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -109,6 +119,7 @@ export interface FileRouteTypes {
     | '/app/stories'
     | '/app'
     | '/app/c/$conversationId'
+    | '/app/cls/$classId'
   id:
     | '__root__'
     | '/'
@@ -119,6 +130,7 @@ export interface FileRouteTypes {
     | '/app/stories'
     | '/app/'
     | '/app/c/$conversationId'
+    | '/app/cls/$classId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -178,6 +190,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppClsRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/cls/$classId': {
+      id: '/app/cls/$classId'
+      path: '/$classId'
+      fullPath: '/app/cls/$classId'
+      preLoaderRoute: typeof AppClsClassIdRouteImport
+      parentRoute: typeof AppClsRoute
+    }
     '/app/c/$conversationId': {
       id: '/app/c/$conversationId'
       path: '/c/$conversationId'
@@ -188,8 +207,19 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AppClsRouteChildren {
+  AppClsClassIdRoute: typeof AppClsClassIdRoute
+}
+
+const AppClsRouteChildren: AppClsRouteChildren = {
+  AppClsClassIdRoute: AppClsClassIdRoute,
+}
+
+const AppClsRouteWithChildren =
+  AppClsRoute._addFileChildren(AppClsRouteChildren)
+
 interface AppRouteChildren {
-  AppClsRoute: typeof AppClsRoute
+  AppClsRoute: typeof AppClsRouteWithChildren
   AppPeopleRoute: typeof AppPeopleRoute
   AppStoriesRoute: typeof AppStoriesRoute
   AppIndexRoute: typeof AppIndexRoute
@@ -197,7 +227,7 @@ interface AppRouteChildren {
 }
 
 const AppRouteChildren: AppRouteChildren = {
-  AppClsRoute: AppClsRoute,
+  AppClsRoute: AppClsRouteWithChildren,
   AppPeopleRoute: AppPeopleRoute,
   AppStoriesRoute: AppStoriesRoute,
   AppIndexRoute: AppIndexRoute,
