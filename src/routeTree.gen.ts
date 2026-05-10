@@ -15,6 +15,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppIndexRouteImport } from './routes/app.index'
 import { Route as AppStoriesRouteImport } from './routes/app.stories'
 import { Route as AppPeopleRouteImport } from './routes/app.people'
+import { Route as AppClsRouteImport } from './routes/app.cls'
 import { Route as AppCConversationIdRouteImport } from './routes/app.c.$conversationId'
 
 const AuthRoute = AuthRouteImport.update({
@@ -47,6 +48,11 @@ const AppPeopleRoute = AppPeopleRouteImport.update({
   path: '/people',
   getParentRoute: () => AppRoute,
 } as any)
+const AppClsRoute = AppClsRouteImport.update({
+  id: '/cls',
+  path: '/cls',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppCConversationIdRoute = AppCConversationIdRouteImport.update({
   id: '/c/$conversationId',
   path: '/c/$conversationId',
@@ -57,6 +63,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/app': typeof AppRouteWithChildren
   '/auth': typeof AuthRoute
+  '/app/cls': typeof AppClsRoute
   '/app/people': typeof AppPeopleRoute
   '/app/stories': typeof AppStoriesRoute
   '/app/': typeof AppIndexRoute
@@ -65,6 +72,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/app/cls': typeof AppClsRoute
   '/app/people': typeof AppPeopleRoute
   '/app/stories': typeof AppStoriesRoute
   '/app': typeof AppIndexRoute
@@ -75,6 +83,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/app': typeof AppRouteWithChildren
   '/auth': typeof AuthRoute
+  '/app/cls': typeof AppClsRoute
   '/app/people': typeof AppPeopleRoute
   '/app/stories': typeof AppStoriesRoute
   '/app/': typeof AppIndexRoute
@@ -86,6 +95,7 @@ export interface FileRouteTypes {
     | '/'
     | '/app'
     | '/auth'
+    | '/app/cls'
     | '/app/people'
     | '/app/stories'
     | '/app/'
@@ -94,6 +104,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/auth'
+    | '/app/cls'
     | '/app/people'
     | '/app/stories'
     | '/app'
@@ -103,6 +114,7 @@ export interface FileRouteTypes {
     | '/'
     | '/app'
     | '/auth'
+    | '/app/cls'
     | '/app/people'
     | '/app/stories'
     | '/app/'
@@ -159,6 +171,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppPeopleRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/cls': {
+      id: '/app/cls'
+      path: '/cls'
+      fullPath: '/app/cls'
+      preLoaderRoute: typeof AppClsRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/c/$conversationId': {
       id: '/app/c/$conversationId'
       path: '/c/$conversationId'
@@ -170,6 +189,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface AppRouteChildren {
+  AppClsRoute: typeof AppClsRoute
   AppPeopleRoute: typeof AppPeopleRoute
   AppStoriesRoute: typeof AppStoriesRoute
   AppIndexRoute: typeof AppIndexRoute
@@ -177,6 +197,7 @@ interface AppRouteChildren {
 }
 
 const AppRouteChildren: AppRouteChildren = {
+  AppClsRoute: AppClsRoute,
   AppPeopleRoute: AppPeopleRoute,
   AppStoriesRoute: AppStoriesRoute,
   AppIndexRoute: AppIndexRoute,
@@ -193,3 +214,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
