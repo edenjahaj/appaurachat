@@ -1,5 +1,5 @@
 import { Link, useLocation } from "@tanstack/react-router";
-import { MessageCircle, Users, Sparkles, LogOut } from "lucide-react";
+import { MessageCircle, Users, Sparkles, LogOut, GraduationCap } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { useRealtime } from "@/lib/realtime-context";
 import { Avatar } from "./Avatar";
@@ -12,6 +12,7 @@ export function Sidebar() {
 
   const items = [
     { to: "/app", icon: MessageCircle, label: "Chats", match: "/app" as const },
+    { to: "/app/cls", icon: GraduationCap, label: "Classes", match: "/app/cls" as const },
     { to: "/app/people", icon: Users, label: "People", match: "/app/people" as const },
     { to: "/app/stories", icon: Sparkles, label: "Stories", match: "/app/stories" as const },
   ];
@@ -22,7 +23,9 @@ export function Sidebar() {
         A
       </Link>
       {items.map((it) => {
-        const active = it.match === "/app" ? loc.pathname === "/app" || loc.pathname.startsWith("/app/c") : isActive(it.match);
+        const active = it.match === "/app"
+          ? loc.pathname === "/app" || loc.pathname.startsWith("/app/c/")
+          : isActive(it.match);
         return (
           <Link
             key={it.to}
