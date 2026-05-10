@@ -1,0 +1,13 @@
+revoke execute on function public.create_class(text) from anon, public;
+revoke execute on function public.join_class(text) from anon, public;
+revoke execute on function public.mark_channel_read(uuid) from anon, public;
+revoke execute on function public.mark_announcement_read(uuid) from anon, public;
+revoke execute on function public.is_class_member(uuid, uuid) from anon, public;
+revoke execute on function public.is_class_admin(uuid, uuid) from anon, public;
+revoke execute on function public.channel_class(uuid) from anon, public;
+revoke execute on function public.channel_is_announcements(uuid) from anon, public;
+revoke execute on function public.gen_join_code() from anon, public;
+grant execute on function public.create_class(text) to authenticated;
+grant execute on function public.join_class(text) to authenticated;
+grant execute on function public.mark_channel_read(uuid) to authenticated;
+grant execute on function public.mark_announcement_read(uuid) to authenticated;
