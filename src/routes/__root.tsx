@@ -94,6 +94,7 @@ function RootComponent() {
           <RealtimeProvider>
             <Outlet />
             <Toaster position="top-center" richColors />
+            <InstallPrompt />
           </RealtimeProvider>
         </AuthProvider>
       </ClientOnly>
