@@ -23,7 +23,9 @@ export function Sidebar() {
         A
       </Link>
       {items.map((it) => {
-        const active = it.match === "/app" ? loc.pathname === "/app" || loc.pathname.startsWith("/app/c") : isActive(it.match);
+        const active = it.match === "/app"
+          ? loc.pathname === "/app" || loc.pathname.startsWith("/app/c/")
+          : isActive(it.match);
         return (
           <Link
             key={it.to}
