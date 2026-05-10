@@ -43,7 +43,12 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   head: () => ({
     meta: [
       { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1" },
+      { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" },
+      { name: "theme-color", content: "#5b8def" },
+      { name: "apple-mobile-web-app-capable", content: "yes" },
+      { name: "mobile-web-app-capable", content: "yes" },
+      { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
+      { name: "apple-mobile-web-app-title", content: "AURA" },
       { title: "AURA — Real-time Messaging" },
       { name: "description", content: "AURA is a premium real-time chat app. Message friends, create groups, share stories." },
       { property: "og:title", content: "AURA — Real-time Messaging" },
