@@ -12,6 +12,7 @@ export function Sidebar() {
 
   const items = [
     { to: "/app", icon: MessageCircle, label: "Chats", match: "/app" as const },
+    { to: "/app/cls", icon: GraduationCap, label: "Classes", match: "/app/cls" as const },
     { to: "/app/people", icon: Users, label: "People", match: "/app/people" as const },
     { to: "/app/stories", icon: Sparkles, label: "Stories", match: "/app/stories" as const },
   ];
