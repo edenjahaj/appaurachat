@@ -10,6 +10,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider } from "@/lib/auth-context";
 import { RealtimeProvider } from "@/lib/realtime-context";
 import { ClientOnly } from "@/components/ClientOnly";
+import { InstallPrompt } from "@/components/InstallPrompt";
 
 import appCss from "../styles.css?url";
 
