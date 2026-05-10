@@ -14,6 +14,247 @@ export type Database = {
   }
   public: {
     Tables: {
+      announcement_reads: {
+        Row: {
+          announcement_id: string
+          read_at: string
+          user_id: string
+        }
+        Insert: {
+          announcement_id: string
+          read_at?: string
+          user_id: string
+        }
+        Update: {
+          announcement_id?: string
+          read_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "announcement_reads_announcement_id_fkey"
+            columns: ["announcement_id"]
+            isOneToOne: false
+            referencedRelation: "announcements"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      announcements: {
+        Row: {
+          author_id: string
+          body: string
+          class_id: string
+          created_at: string
+          id: string
+          pinned: boolean
+          severity: Database["public"]["Enums"]["announcement_severity"]
+          title: string
+        }
+        Insert: {
+          author_id: string
+          body: string
+          class_id: string
+          created_at?: string
+          id?: string
+          pinned?: boolean
+          severity?: Database["public"]["Enums"]["announcement_severity"]
+          title: string
+        }
+        Update: {
+          author_id?: string
+          body?: string
+          class_id?: string
+          created_at?: string
+          id?: string
+          pinned?: boolean
+          severity?: Database["public"]["Enums"]["announcement_severity"]
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "announcements_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      channel_messages: {
+        Row: {
+          channel_id: string
+          content: string | null
+          created_at: string
+          deleted_at: string | null
+          edited_at: string | null
+          id: string
+          parent_id: string | null
+          pinned: boolean
+          sender_id: string
+        }
+        Insert: {
+          channel_id: string
+          content?: string | null
+          created_at?: string
+          deleted_at?: string | null
+          edited_at?: string | null
+          id?: string
+          parent_id?: string | null
+          pinned?: boolean
+          sender_id: string
+        }
+        Update: {
+          channel_id?: string
+          content?: string | null
+          created_at?: string
+          deleted_at?: string | null
+          edited_at?: string | null
+          id?: string
+          parent_id?: string | null
+          pinned?: boolean
+          sender_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "channel_messages_channel_id_fkey"
+            columns: ["channel_id"]
+            isOneToOne: false
+            referencedRelation: "channels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "channel_messages_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "channel_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      channel_reads: {
+        Row: {
+          channel_id: string
+          last_read_at: string
+          user_id: string
+        }
+        Insert: {
+          channel_id: string
+          last_read_at?: string
+          user_id: string
+        }
+        Update: {
+          channel_id?: string
+          last_read_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "channel_reads_channel_id_fkey"
+            columns: ["channel_id"]
+            isOneToOne: false
+            referencedRelation: "channels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      channels: {
+        Row: {
+          class_id: string
+          created_at: string
+          description: string | null
+          icon: string | null
+          id: string
+          is_announcements: boolean
+          name: string
+          position: number
+          slug: string
+        }
+        Insert: {
+          class_id: string
+          created_at?: string
+          description?: string | null
+          icon?: string | null
+          id?: string
+          is_announcements?: boolean
+          name: string
+          position?: number
+          slug: string
+        }
+        Update: {
+          class_id?: string
+          created_at?: string
+          description?: string | null
+          icon?: string | null
+          id?: string
+          is_announcements?: boolean
+          name?: string
+          position?: number
+          slug?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "channels_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      class_members: {
+        Row: {
+          class_id: string
+          joined_at: string
+          role: Database["public"]["Enums"]["class_role"]
+          user_id: string
+        }
+        Insert: {
+          class_id: string
+          joined_at?: string
+          role?: Database["public"]["Enums"]["class_role"]
+          user_id: string
+        }
+        Update: {
+          class_id?: string
+          joined_at?: string
+          role?: Database["public"]["Enums"]["class_role"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "class_members_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      classes: {
+        Row: {
+          created_at: string
+          created_by: string
+          id: string
+          join_code: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          id?: string
+          join_code: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          join_code?: string
+          name?: string
+        }
+        Relationships: []
+      }
       conversation_members: {
         Row: {
           conversation_id: string
@@ -173,22 +414,44 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      channel_class: { Args: { _channel_id: string }; Returns: string }
+      channel_is_announcements: {
+        Args: { _channel_id: string }
+        Returns: boolean
+      }
+      create_class: { Args: { _name: string }; Returns: string }
       create_group: {
         Args: { _member_ids: string[]; _name: string }
         Returns: string
       }
+      gen_join_code: { Args: never; Returns: string }
       get_or_create_dm: { Args: { _other_user_id: string }; Returns: string }
+      is_class_admin: {
+        Args: { _class_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_class_member: {
+        Args: { _class_id: string; _user_id: string }
+        Returns: boolean
+      }
       is_conversation_member: {
         Args: { _conversation_id: string; _user_id: string }
         Returns: boolean
       }
+      join_class: { Args: { _code: string }; Returns: string }
+      mark_announcement_read: {
+        Args: { _announcement_id: string }
+        Returns: undefined
+      }
+      mark_channel_read: { Args: { _channel_id: string }; Returns: undefined }
       mark_conversation_read: {
         Args: { _conversation_id: string }
         Returns: undefined
       }
     }
     Enums: {
-      [_ in never]: never
+      announcement_severity: "normal" | "important" | "critical"
+      class_role: "admin" | "student"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -315,6 +578,9 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      announcement_severity: ["normal", "important", "critical"],
+      class_role: ["admin", "student"],
+    },
   },
 } as const
