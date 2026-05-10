@@ -19,6 +19,7 @@ import { Route as AppClsRouteImport } from './routes/app.cls'
 import { Route as AppClsClassIdRouteImport } from './routes/app.cls.$classId'
 import { Route as AppCConversationIdRouteImport } from './routes/app.c.$conversationId'
 import { Route as AppClsClassIdIndexRouteImport } from './routes/app.cls.$classId.index'
+import { Route as AppClsClassIdChannelSlugRouteImport } from './routes/app.cls.$classId.$channelSlug'
 
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
@@ -70,6 +71,12 @@ const AppClsClassIdIndexRoute = AppClsClassIdIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AppClsClassIdRoute,
 } as any)
+const AppClsClassIdChannelSlugRoute =
+  AppClsClassIdChannelSlugRouteImport.update({
+    id: '/$channelSlug',
+    path: '/$channelSlug',
+    getParentRoute: () => AppClsClassIdRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -81,6 +88,7 @@ export interface FileRoutesByFullPath {
   '/app/': typeof AppIndexRoute
   '/app/c/$conversationId': typeof AppCConversationIdRoute
   '/app/cls/$classId': typeof AppClsClassIdRouteWithChildren
+  '/app/cls/$classId/$channelSlug': typeof AppClsClassIdChannelSlugRoute
   '/app/cls/$classId/': typeof AppClsClassIdIndexRoute
 }
 export interface FileRoutesByTo {
@@ -91,6 +99,7 @@ export interface FileRoutesByTo {
   '/app/stories': typeof AppStoriesRoute
   '/app': typeof AppIndexRoute
   '/app/c/$conversationId': typeof AppCConversationIdRoute
+  '/app/cls/$classId/$channelSlug': typeof AppClsClassIdChannelSlugRoute
   '/app/cls/$classId': typeof AppClsClassIdIndexRoute
 }
 export interface FileRoutesById {
@@ -104,6 +113,7 @@ export interface FileRoutesById {
   '/app/': typeof AppIndexRoute
   '/app/c/$conversationId': typeof AppCConversationIdRoute
   '/app/cls/$classId': typeof AppClsClassIdRouteWithChildren
+  '/app/cls/$classId/$channelSlug': typeof AppClsClassIdChannelSlugRoute
   '/app/cls/$classId/': typeof AppClsClassIdIndexRoute
 }
 export interface FileRouteTypes {
@@ -118,6 +128,7 @@ export interface FileRouteTypes {
     | '/app/'
     | '/app/c/$conversationId'
     | '/app/cls/$classId'
+    | '/app/cls/$classId/$channelSlug'
     | '/app/cls/$classId/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -128,6 +139,7 @@ export interface FileRouteTypes {
     | '/app/stories'
     | '/app'
     | '/app/c/$conversationId'
+    | '/app/cls/$classId/$channelSlug'
     | '/app/cls/$classId'
   id:
     | '__root__'
@@ -140,6 +152,7 @@ export interface FileRouteTypes {
     | '/app/'
     | '/app/c/$conversationId'
     | '/app/cls/$classId'
+    | '/app/cls/$classId/$channelSlug'
     | '/app/cls/$classId/'
   fileRoutesById: FileRoutesById
 }
@@ -221,14 +234,23 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppClsClassIdIndexRouteImport
       parentRoute: typeof AppClsClassIdRoute
     }
+    '/app/cls/$classId/$channelSlug': {
+      id: '/app/cls/$classId/$channelSlug'
+      path: '/$channelSlug'
+      fullPath: '/app/cls/$classId/$channelSlug'
+      preLoaderRoute: typeof AppClsClassIdChannelSlugRouteImport
+      parentRoute: typeof AppClsClassIdRoute
+    }
   }
 }
 
 interface AppClsClassIdRouteChildren {
+  AppClsClassIdChannelSlugRoute: typeof AppClsClassIdChannelSlugRoute
   AppClsClassIdIndexRoute: typeof AppClsClassIdIndexRoute
 }
 
 const AppClsClassIdRouteChildren: AppClsClassIdRouteChildren = {
+  AppClsClassIdChannelSlugRoute: AppClsClassIdChannelSlugRoute,
   AppClsClassIdIndexRoute: AppClsClassIdIndexRoute,
 }
 
