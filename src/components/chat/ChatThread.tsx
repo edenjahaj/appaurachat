@@ -135,6 +135,22 @@ export function ChatThread({ conversationId }: { conversationId: string }) {
           scrollToBottom();
         }
       )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "messages", filter: `conversation_id=eq.${conversationId}` },
+        (payload) => {
+          const upd = payload.new as Message;
+          setMessages((prev) => prev.map((m) => (m.id === upd.id ? { ...m, ...upd } : m)));
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "DELETE", schema: "public", table: "messages", filter: `conversation_id=eq.${conversationId}` },
+        (payload) => {
+          const del = payload.old as { id: string };
+          setMessages((prev) => prev.filter((m) => m.id !== del.id));
+        }
+      )
       .on("broadcast", { event: "typing" }, ({ payload }) => {
         const { userId, displayName, isTyping } = payload as { userId: string; displayName: string; isTyping: boolean };
         if (userId === user.id) return;
