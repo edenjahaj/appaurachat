@@ -314,6 +314,64 @@ export type Database = {
         }
         Relationships: []
       }
+      dm_reactions: {
+        Row: {
+          created_at: string
+          emoji: string
+          message_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          emoji: string
+          message_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          emoji?: string
+          message_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dm_reactions_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      message_reactions: {
+        Row: {
+          created_at: string
+          emoji: string
+          message_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          emoji: string
+          message_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          emoji?: string
+          message_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "message_reactions_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "channel_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       messages: {
         Row: {
           content: string | null
@@ -446,6 +504,14 @@ export type Database = {
       mark_channel_read: { Args: { _channel_id: string }; Returns: undefined }
       mark_conversation_read: {
         Args: { _conversation_id: string }
+        Returns: undefined
+      }
+      toggle_channel_reaction: {
+        Args: { _emoji: string; _message_id: string }
+        Returns: undefined
+      }
+      toggle_dm_reaction: {
+        Args: { _emoji: string; _message_id: string }
         Returns: undefined
       }
     }
