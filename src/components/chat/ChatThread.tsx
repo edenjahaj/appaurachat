@@ -357,12 +357,32 @@ function MessageGroup({
   currentUserId,
   memberMap,
   isGroup,
+  setMessages,
 }: {
   messages: Message[];
   currentUserId: string;
   memberMap: Map<string, MemberProfile>;
   isGroup: boolean;
+  setMessages: React.Dispatch<React.SetStateAction<Message[]>>;
 }) {
+  const [editing, setEditing] = useState<{ id: string; text: string } | null>(null);
+
+  const saveEdit = async () => {
+    if (!editing) return;
+    const { id, text } = editing;
+    setEditing(null);
+    setMessages((prev) => prev.map((m) => (m.id === id ? { ...m, content: text } : m)));
+    const { error } = await supabase.from("messages").update({ content: text, edited_at: new Date().toISOString() }).eq("id", id);
+    if (error) toast.error(error.message);
+  };
+
+  const remove = async (id: string) => {
+    if (!confirm("Delete this message?")) return;
+    setMessages((prev) => prev.filter((m) => m.id !== id));
+    const { error } = await supabase.from("messages").delete().eq("id", id);
+    if (error) toast.error(error.message);
+  };
+
   return (
     <div className="space-y-1">
       {messages.map((m, i) => {
@@ -372,8 +392,8 @@ function MessageGroup({
         const sameAsPrev = prev && prev.sender_id === m.sender_id;
         const sameAsNext = next && next.sender_id === m.sender_id;
         const sender = memberMap.get(m.sender_id);
+        const isEditing = editing?.id === m.id;
 
-        // Date separator
         const showDate = !prev || new Date(prev.created_at).toDateString() !== new Date(m.created_at).toDateString();
         const d = new Date(m.created_at);
         const dateLabel = isToday(d) ? "Today" : isYesterday(d) ? "Yesterday" : format(d, "MMM d, yyyy");
@@ -385,7 +405,7 @@ function MessageGroup({
                 <span className="px-3 py-1 rounded-full bg-secondary">{dateLabel}</span>
               </div>
             )}
-            <div className={`flex gap-2 items-end ${isMe ? "justify-end" : "justify-start"} ${sameAsPrev ? "mt-0.5" : "mt-2"}`}>
+            <div className={`group flex gap-2 items-end ${isMe ? "justify-end" : "justify-start"} ${sameAsPrev ? "mt-0.5" : "mt-2"}`}>
               {!isMe && (
                 <div className="w-8 shrink-0">
                   {!sameAsNext && sender && <Avatar name={sender.display_name} src={sender.avatar_url} size={28} />}
@@ -395,23 +415,52 @@ function MessageGroup({
                 {isGroup && !isMe && !sameAsPrev && sender && (
                   <span className="text-[11px] text-muted-foreground mb-0.5 px-2">{sender.display_name}</span>
                 )}
-                <div
-                  className={`overflow-hidden text-[15px] leading-snug shadow-[var(--shadow-bubble)] animate-bubble-in whitespace-pre-wrap break-words ${
-                    isMe ? "bg-bubble-sent text-bubble-sent-foreground" : "bg-bubble-received text-bubble-received-foreground"
-                  } ${m.pending ? "opacity-70" : ""} ${m.image_url && !m.content ? "p-1" : "px-4 py-2.5"}`}
-                  style={{
-                    borderRadius: isMe
-                      ? `20px 20px ${sameAsNext ? "6px" : "20px"} 20px`
-                      : `20px 20px 20px ${sameAsNext ? "6px" : "20px"}`,
-                  }}
-                >
-                  {m.image_url && (
-                    <a href={m.image_url} target="_blank" rel="noreferrer">
-                      <img src={m.image_url} alt="" className="rounded-xl max-h-72 object-cover" loading="lazy" />
-                    </a>
+                <div className="relative flex items-center gap-1">
+                  {isMe && !isEditing && !m.pending && (
+                    <div className="opacity-0 group-hover:opacity-100 transition flex gap-0.5">
+                      <button onClick={() => setEditing({ id: m.id, text: m.content ?? "" })} className="size-7 rounded-full hover:bg-secondary grid place-items-center" title="Edit">
+                        <Pencil className="size-3.5" />
+                      </button>
+                      <button onClick={() => remove(m.id)} className="size-7 rounded-full hover:bg-destructive/10 hover:text-destructive grid place-items-center" title="Delete">
+                        <Trash2 className="size-3.5" />
+                      </button>
+                    </div>
                   )}
-                  {m.content && <div className={m.image_url ? "mt-2 px-3 pb-1" : ""}>{m.content}</div>}
+                  {isEditing ? (
+                    <div className="flex gap-2 px-3 py-2 rounded-2xl bg-secondary">
+                      <input
+                        autoFocus
+                        value={editing!.text}
+                        onChange={(e) => setEditing({ id: m.id, text: e.target.value })}
+                        onKeyDown={(e) => { if (e.key === "Enter") saveEdit(); if (e.key === "Escape") setEditing(null); }}
+                        className="bg-transparent text-sm focus:outline-none min-w-[200px]"
+                      />
+                      <button onClick={saveEdit} className="text-xs font-bold text-primary">Save</button>
+                      <button onClick={() => setEditing(null)} className="text-xs text-muted-foreground">Cancel</button>
+                    </div>
+                  ) : (
+                    <div
+                      className={`overflow-hidden text-[15px] leading-snug shadow-[var(--shadow-bubble)] animate-bubble-in whitespace-pre-wrap break-words ${
+                        isMe ? "bg-bubble-sent text-bubble-sent-foreground" : "bg-bubble-received text-bubble-received-foreground"
+                      } ${m.pending ? "opacity-70" : ""} ${m.image_url && !m.content ? "p-1" : "px-4 py-2.5"}`}
+                      style={{
+                        borderRadius: isMe
+                          ? `20px 20px ${sameAsNext ? "6px" : "20px"} 20px`
+                          : `20px 20px 20px ${sameAsNext ? "6px" : "20px"}`,
+                      }}
+                    >
+                      {m.image_url && (
+                        <a href={m.image_url} target="_blank" rel="noreferrer">
+                          <img src={m.image_url} alt="" className="rounded-xl max-h-72 object-cover" loading="lazy" />
+                        </a>
+                      )}
+                      {m.content && <div className={m.image_url ? "mt-2 px-3 pb-1" : ""}>{m.content}</div>}
+                    </div>
+                  )}
                 </div>
+                {!m.pending && !isEditing && !m.id.startsWith("temp-") && (
+                  <MessageReactions messageId={m.id} scope="dm" align={isMe ? "right" : "left"} />
+                )}
                 {!sameAsNext && (
                   <span className="text-[10px] text-muted-foreground mt-0.5 px-2">{format(d, "h:mm a")}</span>
                 )}
@@ -423,3 +472,4 @@ function MessageGroup({
     </div>
   );
 }
+
