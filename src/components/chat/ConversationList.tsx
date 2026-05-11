@@ -169,6 +169,7 @@ export function ConversationList({ activeId }: { activeId?: string }) {
             const count = unread[c.id] ?? 0;
             const otherId = others[0]?.user_id;
             const online = !c.is_group && otherId ? isOnline(otherId) : false;
+            const fav = !c.is_group && otherId ? isFavorite(otherId) : false;
 
             return (
               <Link
@@ -176,12 +177,13 @@ export function ConversationList({ activeId }: { activeId?: string }) {
                 to="/app/c/$conversationId"
                 params={{ conversationId: c.id }}
                 className={`flex gap-3 p-3 rounded-2xl mx-1 my-0.5 transition ${
-                  active ? "bg-accent" : "hover:bg-secondary"
+                  active ? "bg-accent" : fav ? "bg-amber-400/[0.06] hover:bg-amber-400/[0.12]" : "hover:bg-secondary"
                 }`}
               >
                 <div className="relative shrink-0">
                   <Avatar name={avatarName} src={avatarSrc} size={48} />
                   {online && <span className="absolute bottom-0 right-0 size-3 rounded-full bg-emerald-500 ring-2 ring-card" />}
+                  {fav && <span className="absolute -top-1 -right-1 size-4 rounded-full bg-amber-400 grid place-items-center ring-2 ring-card"><Star className="size-2.5 fill-white text-white" /></span>}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-2">
