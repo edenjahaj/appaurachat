@@ -34,8 +34,10 @@ export function ChannelView({ classId, channelId, channelName, isAdmin }: { clas
   const [profiles, setProfiles] = useState<Map<string, Profile>>(new Map());
   const [text, setText] = useState("");
   const [editing, setEditing] = useState<{ id: string; text: string } | null>(null);
+  const [replyTo, setReplyTo] = useState<Msg | null>(null);
   const [search, setSearch] = useState("");
   const [showSearch, setShowSearch] = useState(false);
+  const [showPinned, setShowPinned] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const channelRef = useRef<RealtimeChannel | null>(null);
 
