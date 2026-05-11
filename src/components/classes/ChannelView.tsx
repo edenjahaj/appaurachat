@@ -2,10 +2,11 @@ import { useEffect, useRef, useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { Avatar } from "@/components/chat/Avatar";
-import { Send, Hash, Search, Trash2, Pencil } from "lucide-react";
+import { Send, Hash, Search, Trash2, Pencil, Reply, Pin, X, PinOff } from "lucide-react";
 import { format, isToday, isYesterday } from "date-fns";
 import { toast } from "sonner";
 import type { RealtimeChannel } from "@supabase/supabase-js";
+import { MessageReactions } from "@/components/chat/MessageReactions";
 
 interface Msg {
   id: string;
@@ -15,6 +16,8 @@ interface Msg {
   edited_at: string | null;
   deleted_at: string | null;
   created_at: string;
+  parent_id: string | null;
+  pinned: boolean;
   pending?: boolean;
 }
 interface Profile { id: string; display_name: string; avatar_url: string | null; }
@@ -31,8 +34,10 @@ export function ChannelView({ classId, channelId, channelName, isAdmin }: { clas
   const [profiles, setProfiles] = useState<Map<string, Profile>>(new Map());
   const [text, setText] = useState("");
   const [editing, setEditing] = useState<{ id: string; text: string } | null>(null);
+  const [replyTo, setReplyTo] = useState<Msg | null>(null);
   const [search, setSearch] = useState("");
   const [showSearch, setShowSearch] = useState(false);
+  const [showPinned, setShowPinned] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const channelRef = useRef<RealtimeChannel | null>(null);
 
@@ -42,7 +47,7 @@ export function ChannelView({ classId, channelId, channelName, isAdmin }: { clas
     (async () => {
       const { data } = await supabase
         .from("channel_messages")
-        .select("id, channel_id, sender_id, content, edited_at, deleted_at, created_at")
+        .select("id, channel_id, sender_id, content, edited_at, deleted_at, created_at, parent_id, pinned")
         .eq("channel_id", channelId)
         .order("created_at", { ascending: true })
         .limit(200);
@@ -93,18 +98,25 @@ export function ChannelView({ classId, channelId, channelName, isAdmin }: { clas
   const send = async () => {
     if (!user || !text.trim()) return;
     const content = text.trim();
+    const parent_id = replyTo?.id ?? null;
     setText("");
+    setReplyTo(null);
     const tempId = `tmp-${Date.now()}`;
-    const optimistic: Msg = { id: tempId, channel_id: channelId, sender_id: user.id, content, edited_at: null, deleted_at: null, created_at: new Date().toISOString(), pending: true };
+    const optimistic: Msg = { id: tempId, channel_id: channelId, sender_id: user.id, content, edited_at: null, deleted_at: null, created_at: new Date().toISOString(), parent_id, pinned: false, pending: true };
     setMessages((p) => [...p, optimistic]);
     requestAnimationFrame(() => scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight }));
-    const { data, error } = await supabase.from("channel_messages").insert({ channel_id: channelId, sender_id: user.id, content }).select().single();
+    const { data, error } = await supabase.from("channel_messages").insert({ channel_id: channelId, sender_id: user.id, content, parent_id }).select().single();
     if (error) {
       toast.error(error.message);
       setMessages((p) => p.filter((m) => m.id !== tempId));
     } else {
       setMessages((p) => p.map((m) => m.id === tempId ? (data as Msg) : m));
     }
+  };
+
+  const togglePin = async (m: Msg) => {
+    const { error } = await supabase.from("channel_messages").update({ pinned: !m.pinned }).eq("id", m.id);
+    if (error) toast.error(error.message);
   };
 
   const saveEdit = async () => {
@@ -140,12 +152,20 @@ export function ChannelView({ classId, channelId, channelName, isAdmin }: { clas
     return out;
   }, [filtered]);
 
+  const messageMap = useMemo(() => new Map(messages.map((m) => [m.id, m])), [messages]);
+  const pinnedList = useMemo(() => messages.filter((m) => m.pinned), [messages]);
+
   return (
     <div className="flex-1 min-w-0 flex flex-col bg-background">
       <header className="h-14 px-4 border-b border-border flex items-center gap-3 bg-card/60 backdrop-blur">
         <Hash className="size-4 text-muted-foreground" />
         <h2 className="font-bold truncate">{channelName}</h2>
         <div className="ml-auto flex items-center gap-2">
+          {pinnedList.length > 0 && (
+            <button onClick={() => setShowPinned((s) => !s)} className="h-9 px-3 rounded-full hover:bg-secondary flex items-center gap-1.5 text-xs font-semibold" title="Pinned">
+              <Pin className="size-3.5" /> {pinnedList.length}
+            </button>
+          )}
           <button onClick={() => setShowSearch((s) => !s)} className="size-9 rounded-full hover:bg-secondary grid place-items-center" title="Search">
             <Search className="size-4" />
           </button>
@@ -164,6 +184,21 @@ export function ChannelView({ classId, channelId, channelName, isAdmin }: { clas
         </div>
       )}
 
+      {showPinned && pinnedList.length > 0 && (
+        <div className="px-4 py-2 border-b border-border bg-amber-500/5 max-h-48 overflow-y-auto scroll-thin">
+          <div className="text-[11px] uppercase font-bold text-muted-foreground mb-1.5 flex items-center gap-1"><Pin className="size-3" /> Pinned</div>
+          {pinnedList.map((m) => {
+            const prof = profiles.get(m.sender_id);
+            return (
+              <div key={m.id} className="text-xs py-1 border-b border-border/40 last:border-0">
+                <span className="font-semibold">{prof?.display_name ?? "Unknown"}: </span>
+                <span className="text-muted-foreground">{m.content}</span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
       <div ref={scrollRef} className="flex-1 overflow-y-auto scroll-thin px-4 py-3 space-y-1">
         {grouped.length === 0 && (
           <div className="text-center text-sm text-muted-foreground py-12">
@@ -177,12 +212,14 @@ export function ChannelView({ classId, channelId, channelName, isAdmin }: { clas
             </div>
             {g.items.map((m, i) => {
               const prev = g.items[i - 1];
-              const sameAuthor = prev && prev.sender_id === m.sender_id && new Date(m.created_at).getTime() - new Date(prev.created_at).getTime() < 5 * 60 * 1000;
+              const sameAuthor = prev && prev.sender_id === m.sender_id && !m.parent_id && new Date(m.created_at).getTime() - new Date(prev.created_at).getTime() < 5 * 60 * 1000;
               const prof = profiles.get(m.sender_id);
               const mine = m.sender_id === user?.id;
               const isEditing = editing?.id === m.id;
+              const parent = m.parent_id ? messageMap.get(m.parent_id) : null;
+              const parentProf = parent ? profiles.get(parent.sender_id) : null;
               return (
-                <div key={m.id} className={`group flex gap-3 px-2 py-1 rounded-lg hover:bg-secondary/40 ${sameAuthor ? "" : "mt-2"} animate-bubble-in`}>
+                <div key={m.id} className={`group relative flex gap-3 px-2 py-1 rounded-lg hover:bg-secondary/40 ${sameAuthor ? "" : "mt-2"} ${m.pinned ? "border-l-2 border-amber-500/60 bg-amber-500/[0.03]" : ""} animate-bubble-in`}>
                   <div className="w-9 shrink-0 pt-0.5">
                     {!sameAuthor && <Avatar name={prof?.display_name ?? "?"} src={prof?.avatar_url} size={32} />}
                   </div>
@@ -191,6 +228,13 @@ export function ChannelView({ classId, channelId, channelName, isAdmin }: { clas
                       <div className="flex items-baseline gap-2 mb-0.5">
                         <span className="font-semibold text-sm">{prof?.display_name ?? "Unknown"}</span>
                         <span className="text-[10px] text-muted-foreground">{format(new Date(m.created_at), "h:mm a")}</span>
+                        {m.pinned && <Pin className="size-3 text-amber-500" />}
+                      </div>
+                    )}
+                    {parent && (
+                      <div className="text-xs mb-1 px-2 py-1 rounded-md bg-secondary/60 border-l-2 border-primary/60 max-w-md truncate">
+                        <span className="font-semibold text-primary">{parentProf?.display_name ?? "Unknown"}</span>
+                        <span className="text-muted-foreground"> · {parent.content}</span>
                       </div>
                     )}
                     {isEditing ? (
@@ -211,17 +255,28 @@ export function ChannelView({ classId, channelId, channelName, isAdmin }: { clas
                         {m.edited_at && <span className="ml-1 text-[10px] text-muted-foreground">(edited)</span>}
                       </p>
                     )}
+                    {!m.pending && !isEditing && <MessageReactions messageId={m.id} scope="channel" />}
                   </div>
-                  {(mine || isAdmin) && !isEditing && (
-                    <div className="opacity-0 group-hover:opacity-100 transition flex items-start gap-1 pt-0.5">
+                  {!isEditing && (
+                    <div className="absolute top-0 right-2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition flex items-center gap-0.5 bg-card border border-border rounded-full shadow-sm px-1 py-0.5">
+                      <button onClick={() => setReplyTo(m)} className="size-7 rounded-full hover:bg-secondary grid place-items-center" title="Reply">
+                        <Reply className="size-3.5" />
+                      </button>
+                      {isAdmin && (
+                        <button onClick={() => togglePin(m)} className="size-7 rounded-full hover:bg-secondary grid place-items-center" title={m.pinned ? "Unpin" : "Pin"}>
+                          {m.pinned ? <PinOff className="size-3.5" /> : <Pin className="size-3.5" />}
+                        </button>
+                      )}
                       {mine && (
-                        <button onClick={() => setEditing({ id: m.id, text: m.content ?? "" })} className="size-7 rounded-md hover:bg-secondary grid place-items-center" title="Edit">
+                        <button onClick={() => setEditing({ id: m.id, text: m.content ?? "" })} className="size-7 rounded-full hover:bg-secondary grid place-items-center" title="Edit">
                           <Pencil className="size-3.5" />
                         </button>
                       )}
-                      <button onClick={() => remove(m.id)} className="size-7 rounded-md hover:bg-destructive/10 hover:text-destructive grid place-items-center" title="Delete">
-                        <Trash2 className="size-3.5" />
-                      </button>
+                      {(mine || isAdmin) && (
+                        <button onClick={() => remove(m.id)} className="size-7 rounded-full hover:bg-destructive/10 hover:text-destructive grid place-items-center" title="Delete">
+                          <Trash2 className="size-3.5" />
+                        </button>
+                      )}
                     </div>
                   )}
                 </div>
@@ -232,12 +287,21 @@ export function ChannelView({ classId, channelId, channelName, isAdmin }: { clas
       </div>
 
       <div className="border-t border-border p-3 bg-card/60 backdrop-blur">
+        {replyTo && (
+          <div className="mb-2 px-3 py-2 rounded-xl bg-secondary/60 flex items-start gap-2 text-xs border-l-2 border-primary">
+            <div className="flex-1 min-w-0">
+              <div className="font-semibold text-primary">Replying to {profiles.get(replyTo.sender_id)?.display_name ?? "Unknown"}</div>
+              <div className="text-muted-foreground truncate">{replyTo.content}</div>
+            </div>
+            <button onClick={() => setReplyTo(null)} className="size-6 rounded-full hover:bg-secondary grid place-items-center"><X className="size-3.5" /></button>
+          </div>
+        )}
         <div className="flex items-center gap-2 rounded-2xl bg-secondary px-3 py-2">
           <input
             value={text}
             onChange={(e) => setText(e.target.value)}
-            onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } }}
-            placeholder={`Message #${channelName}`}
+            onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } if (e.key === "Escape") setReplyTo(null); }}
+            placeholder={replyTo ? `Reply…` : `Message #${channelName}`}
             className="flex-1 bg-transparent focus:outline-none text-sm py-1"
           />
           <button onClick={send} disabled={!text.trim()} className="size-9 rounded-full bg-primary text-primary-foreground grid place-items-center disabled:opacity-40 hover:opacity-90 transition">
@@ -248,3 +312,4 @@ export function ChannelView({ classId, channelId, channelName, isAdmin }: { clas
     </div>
   );
 }
+
