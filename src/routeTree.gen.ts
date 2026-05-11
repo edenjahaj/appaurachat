@@ -14,6 +14,8 @@ import { Route as AppRouteImport } from './routes/app'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppIndexRouteImport } from './routes/app.index'
 import { Route as AppStoriesRouteImport } from './routes/app.stories'
+import { Route as AppSettingsRouteImport } from './routes/app.settings'
+import { Route as AppProfileRouteImport } from './routes/app.profile'
 import { Route as AppPeopleRouteImport } from './routes/app.people'
 import { Route as AppClsRouteImport } from './routes/app.cls'
 import { Route as AppClsClassIdRouteImport } from './routes/app.cls.$classId'
@@ -44,6 +46,16 @@ const AppIndexRoute = AppIndexRouteImport.update({
 const AppStoriesRoute = AppStoriesRouteImport.update({
   id: '/stories',
   path: '/stories',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppSettingsRoute = AppSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppProfileRoute = AppProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
   getParentRoute: () => AppRoute,
 } as any)
 const AppPeopleRoute = AppPeopleRouteImport.update({
@@ -84,6 +96,8 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/app/cls': typeof AppClsRouteWithChildren
   '/app/people': typeof AppPeopleRoute
+  '/app/profile': typeof AppProfileRoute
+  '/app/settings': typeof AppSettingsRoute
   '/app/stories': typeof AppStoriesRoute
   '/app/': typeof AppIndexRoute
   '/app/c/$conversationId': typeof AppCConversationIdRoute
@@ -96,6 +110,8 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/app/cls': typeof AppClsRouteWithChildren
   '/app/people': typeof AppPeopleRoute
+  '/app/profile': typeof AppProfileRoute
+  '/app/settings': typeof AppSettingsRoute
   '/app/stories': typeof AppStoriesRoute
   '/app': typeof AppIndexRoute
   '/app/c/$conversationId': typeof AppCConversationIdRoute
@@ -109,6 +125,8 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/app/cls': typeof AppClsRouteWithChildren
   '/app/people': typeof AppPeopleRoute
+  '/app/profile': typeof AppProfileRoute
+  '/app/settings': typeof AppSettingsRoute
   '/app/stories': typeof AppStoriesRoute
   '/app/': typeof AppIndexRoute
   '/app/c/$conversationId': typeof AppCConversationIdRoute
@@ -124,6 +142,8 @@ export interface FileRouteTypes {
     | '/auth'
     | '/app/cls'
     | '/app/people'
+    | '/app/profile'
+    | '/app/settings'
     | '/app/stories'
     | '/app/'
     | '/app/c/$conversationId'
@@ -136,6 +156,8 @@ export interface FileRouteTypes {
     | '/auth'
     | '/app/cls'
     | '/app/people'
+    | '/app/profile'
+    | '/app/settings'
     | '/app/stories'
     | '/app'
     | '/app/c/$conversationId'
@@ -148,6 +170,8 @@ export interface FileRouteTypes {
     | '/auth'
     | '/app/cls'
     | '/app/people'
+    | '/app/profile'
+    | '/app/settings'
     | '/app/stories'
     | '/app/'
     | '/app/c/$conversationId'
@@ -197,6 +221,20 @@ declare module '@tanstack/react-router' {
       path: '/stories'
       fullPath: '/app/stories'
       preLoaderRoute: typeof AppStoriesRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/settings': {
+      id: '/app/settings'
+      path: '/settings'
+      fullPath: '/app/settings'
+      preLoaderRoute: typeof AppSettingsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/profile': {
+      id: '/app/profile'
+      path: '/profile'
+      fullPath: '/app/profile'
+      preLoaderRoute: typeof AppProfileRouteImport
       parentRoute: typeof AppRoute
     }
     '/app/people': {
@@ -272,6 +310,8 @@ const AppClsRouteWithChildren =
 interface AppRouteChildren {
   AppClsRoute: typeof AppClsRouteWithChildren
   AppPeopleRoute: typeof AppPeopleRoute
+  AppProfileRoute: typeof AppProfileRoute
+  AppSettingsRoute: typeof AppSettingsRoute
   AppStoriesRoute: typeof AppStoriesRoute
   AppIndexRoute: typeof AppIndexRoute
   AppCConversationIdRoute: typeof AppCConversationIdRoute
@@ -280,6 +320,8 @@ interface AppRouteChildren {
 const AppRouteChildren: AppRouteChildren = {
   AppClsRoute: AppClsRouteWithChildren,
   AppPeopleRoute: AppPeopleRoute,
+  AppProfileRoute: AppProfileRoute,
+  AppSettingsRoute: AppSettingsRoute,
   AppStoriesRoute: AppStoriesRoute,
   AppIndexRoute: AppIndexRoute,
   AppCConversationIdRoute: AppCConversationIdRoute,
@@ -295,3 +337,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
