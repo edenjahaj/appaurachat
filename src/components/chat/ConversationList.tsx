@@ -3,8 +3,9 @@ import { Link } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { useRealtime } from "@/lib/realtime-context";
+import { useFavorites } from "@/lib/favorites-context";
 import { Avatar } from "./Avatar";
-import { Plus, Search, Image as ImageIcon } from "lucide-react";
+import { Plus, Search, Image as ImageIcon, Star } from "lucide-react";
 import { formatDistanceToNowStrict } from "date-fns";
 import { CreateGroupDialog } from "./CreateGroupDialog";
 
@@ -20,6 +21,7 @@ interface ConvoRow {
 export function ConversationList({ activeId }: { activeId?: string }) {
   const { user } = useAuth();
   const { unread, isOnline } = useRealtime();
+  const { isFavorite } = useFavorites();
   const [convos, setConvos] = useState<ConvoRow[]>([]);
   const [q, setQ] = useState("");
   const [loading, setLoading] = useState(true);
@@ -102,11 +104,18 @@ export function ConversationList({ activeId }: { activeId?: string }) {
     };
   }, [user?.id]);
 
-  const filtered = convos.filter((c) => {
-    if (!q) return true;
-    const title = c.is_group ? c.name ?? "" : c.members.find((m) => m.user_id !== user?.id)?.profile?.display_name ?? "";
-    return title.toLowerCase().includes(q.toLowerCase());
-  });
+  const filtered = convos
+    .filter((c) => {
+      if (!q) return true;
+      const title = c.is_group ? c.name ?? "" : c.members.find((m) => m.user_id !== user?.id)?.profile?.display_name ?? "";
+      return title.toLowerCase().includes(q.toLowerCase());
+    })
+    .sort((a, b) => {
+      const aFav = !a.is_group && isFavorite(a.members.find((m) => m.user_id !== user?.id)?.user_id ?? "") ? 1 : 0;
+      const bFav = !b.is_group && isFavorite(b.members.find((m) => m.user_id !== user?.id)?.user_id ?? "") ? 1 : 0;
+      if (aFav !== bFav) return bFav - aFav;
+      return new Date(b.last_message_at).getTime() - new Date(a.last_message_at).getTime();
+    });
 
   return (
     <>
