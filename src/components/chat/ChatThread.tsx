@@ -60,19 +60,11 @@ export function ChatThread({ conversationId }: { conversationId: string }) {
     return () => setActiveConversationId(null);
   }, [conversationId, setActiveConversationId]);
 
-  const scrollToBottom = (smooth = true) => {
+  const scrollToBottom = () => {
     requestAnimationFrame(() => {
       const el = scrollRef.current;
       if (!el) return;
-      
-      if (smooth) {
-        el.scrollTo({
-          top: el.scrollHeight,
-          behavior: 'smooth'
-        });
-      } else {
-        el.scrollTop = el.scrollHeight;
-      }
+      el.scrollTop = el.scrollHeight;
     });
   };
 
@@ -81,10 +73,6 @@ export function ChatThread({ conversationId }: { conversationId: string }) {
     if (!el) return;
     const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
     isNearBottomRef.current = distanceFromBottom <= 80;
-  };
-
-  const scrollToBottomSmooth = () => {
-    scrollToBottom(true);
   };
 
   // Load conversation, members, and messages
@@ -367,7 +355,7 @@ export function ChatThread({ conversationId }: { conversationId: string }) {
         ref={scrollRef}
         onScroll={handleScroll}
         className="flex-1 min-h-0 overflow-y-auto scroll-thin px-3 md:px-6 py-4 bg-[image:linear-gradient(180deg,var(--color-background),var(--color-secondary))]"
-        style={{ overflowAnchor: "none", scrollBehavior: 'smooth' }}
+        style={{ overflowAnchor: "none" }}
       >
         {loading ? (
           <div className="text-sm text-muted-foreground text-center py-8">Loading messages…</div>
