@@ -3,8 +3,9 @@ import { useNavigate } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { useRealtime } from "@/lib/realtime-context";
+import { useFavorites } from "@/lib/favorites-context";
 import { Avatar } from "./Avatar";
-import { MessageCircle, Search } from "lucide-react";
+import { MessageCircle, Search, Star } from "lucide-react";
 import { toast } from "sonner";
 
 interface Person {
@@ -18,6 +19,7 @@ interface Person {
 export function PeopleList() {
   const { user } = useAuth();
   const { isOnline } = useRealtime();
+  const { isFavorite, toggle: toggleFav } = useFavorites();
   const navigate = useNavigate();
   const [people, setPeople] = useState<Person[]>([]);
   const [q, setQ] = useState("");
@@ -47,9 +49,9 @@ export function PeopleList() {
     if (data) navigate({ to: "/app/c/$conversationId", params: { conversationId: data as string } });
   };
 
-  const filtered = people.filter(
-    (p) => !q || p.display_name.toLowerCase().includes(q.toLowerCase()) || p.username.toLowerCase().includes(q.toLowerCase())
-  );
+  const filtered = people
+    .filter((p) => !q || p.display_name.toLowerCase().includes(q.toLowerCase()) || p.username.toLowerCase().includes(q.toLowerCase()))
+    .sort((a, b) => Number(isFavorite(b.id)) - Number(isFavorite(a.id)));
 
   return (
     <div>
@@ -73,30 +75,43 @@ export function PeopleList() {
         </div>
       ) : (
         <div className="space-y-2">
-          {filtered.map((p) => (
-            <div key={p.id} className="flex items-center gap-3 p-3 rounded-2xl bg-card border border-border hover:shadow-[var(--shadow-soft)] transition">
-              <div className="relative">
-                <Avatar name={p.display_name} src={p.avatar_url} size={48} />
-                {isOnline(p.id) && <span className="absolute bottom-0 right-0 size-3 rounded-full bg-emerald-500 ring-2 ring-card" />}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="font-semibold truncate">{p.display_name}</div>
-                <div className="text-xs text-muted-foreground truncate">
-                  @{p.username}
-                  {isOnline(p.id) && <span className="ml-2 text-emerald-600 font-medium">• Online</span>}
-                  {p.bio ? ` • ${p.bio}` : ""}
+          {filtered.map((p) => {
+            const fav = isFavorite(p.id);
+            return (
+              <div key={p.id} className={`flex items-center gap-3 p-3 rounded-2xl bg-card border transition ${fav ? "border-primary/40 shadow-[0_0_0_1px_var(--color-primary)/_10%]" : "border-border hover:shadow-[var(--shadow-soft)]"}`}>
+                <div className="relative">
+                  <Avatar name={p.display_name} src={p.avatar_url} size={48} />
+                  {isOnline(p.id) && <span className="absolute bottom-0 right-0 size-3 rounded-full bg-emerald-500 ring-2 ring-card" />}
                 </div>
+                <div className="flex-1 min-w-0">
+                  <div className="font-semibold truncate flex items-center gap-1.5">
+                    {p.display_name}
+                    {fav && <Star className="size-3.5 fill-amber-400 text-amber-400" />}
+                  </div>
+                  <div className="text-xs text-muted-foreground truncate">
+                    @{p.username}
+                    {isOnline(p.id) && <span className="ml-2 text-emerald-600 font-medium">• Online</span>}
+                    {p.bio ? ` • ${p.bio}` : ""}
+                  </div>
+                </div>
+                <button
+                  onClick={() => toggleFav(p.id)}
+                  className={`size-9 rounded-full grid place-items-center transition ${fav ? "bg-amber-400/15 text-amber-500" : "hover:bg-secondary text-muted-foreground"}`}
+                  title={fav ? "Remove from best friends" : "Add to best friends"}
+                >
+                  <Star className={`size-4 ${fav ? "fill-current" : ""}`} />
+                </button>
+                <button
+                  onClick={() => openChat(p)}
+                  disabled={opening === p.id}
+                  className="rounded-full bg-primary text-primary-foreground px-4 py-2 text-sm font-semibold flex items-center gap-2 disabled:opacity-50 hover:opacity-90"
+                >
+                  <MessageCircle className="size-4" />
+                  Message
+                </button>
               </div>
-              <button
-                onClick={() => openChat(p)}
-                disabled={opening === p.id}
-                className="rounded-full bg-primary text-primary-foreground px-4 py-2 text-sm font-semibold flex items-center gap-2 disabled:opacity-50 hover:opacity-90"
-              >
-                <MessageCircle className="size-4" />
-                Message
-              </button>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>
