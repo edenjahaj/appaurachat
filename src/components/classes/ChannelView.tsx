@@ -2,10 +2,11 @@ import { useEffect, useRef, useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { Avatar } from "@/components/chat/Avatar";
-import { Send, Hash, Search, Trash2, Pencil } from "lucide-react";
+import { Send, Hash, Search, Trash2, Pencil, Reply, Pin, X, PinOff } from "lucide-react";
 import { format, isToday, isYesterday } from "date-fns";
 import { toast } from "sonner";
 import type { RealtimeChannel } from "@supabase/supabase-js";
+import { MessageReactions } from "@/components/chat/MessageReactions";
 
 interface Msg {
   id: string;
@@ -15,6 +16,8 @@ interface Msg {
   edited_at: string | null;
   deleted_at: string | null;
   created_at: string;
+  parent_id: string | null;
+  pinned: boolean;
   pending?: boolean;
 }
 interface Profile { id: string; display_name: string; avatar_url: string | null; }
