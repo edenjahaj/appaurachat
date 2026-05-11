@@ -98,18 +98,25 @@ export function ChannelView({ classId, channelId, channelName, isAdmin }: { clas
   const send = async () => {
     if (!user || !text.trim()) return;
     const content = text.trim();
+    const parent_id = replyTo?.id ?? null;
     setText("");
+    setReplyTo(null);
     const tempId = `tmp-${Date.now()}`;
-    const optimistic: Msg = { id: tempId, channel_id: channelId, sender_id: user.id, content, edited_at: null, deleted_at: null, created_at: new Date().toISOString(), pending: true };
+    const optimistic: Msg = { id: tempId, channel_id: channelId, sender_id: user.id, content, edited_at: null, deleted_at: null, created_at: new Date().toISOString(), parent_id, pinned: false, pending: true };
     setMessages((p) => [...p, optimistic]);
     requestAnimationFrame(() => scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight }));
-    const { data, error } = await supabase.from("channel_messages").insert({ channel_id: channelId, sender_id: user.id, content }).select().single();
+    const { data, error } = await supabase.from("channel_messages").insert({ channel_id: channelId, sender_id: user.id, content, parent_id }).select().single();
     if (error) {
       toast.error(error.message);
       setMessages((p) => p.filter((m) => m.id !== tempId));
     } else {
       setMessages((p) => p.map((m) => m.id === tempId ? (data as Msg) : m));
     }
+  };
+
+  const togglePin = async (m: Msg) => {
+    const { error } = await supabase.from("channel_messages").update({ pinned: !m.pinned }).eq("id", m.id);
+    if (error) toast.error(error.message);
   };
 
   const saveEdit = async () => {
