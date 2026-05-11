@@ -47,7 +47,7 @@ export function ChannelView({ classId, channelId, channelName, isAdmin }: { clas
     (async () => {
       const { data } = await supabase
         .from("channel_messages")
-        .select("id, channel_id, sender_id, content, edited_at, deleted_at, created_at")
+        .select("id, channel_id, sender_id, content, edited_at, deleted_at, created_at, parent_id, pinned")
         .eq("channel_id", channelId)
         .order("created_at", { ascending: true })
         .limit(200);
