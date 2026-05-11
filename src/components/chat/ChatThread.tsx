@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
@@ -28,7 +28,7 @@ interface MemberProfile {
 }
 
 export function ChatThread({ conversationId }: { conversationId: string }) {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const { markRead, setActiveConversationId, isOnline } = useRealtime();
   const navigate = useNavigate();
   const [messages, setMessages] = useState<Message[]>([]);
@@ -43,6 +43,16 @@ export function ChatThread({ conversationId }: { conversationId: string }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const channelRef = useRef<RealtimeChannel | null>(null);
   const typingTimeoutRef = useRef<Record<string, number>>({});
+  const pendingImagePreviewRef = useRef<string | null>(null);
+  const isNearBottomRef = useRef(true);
+
+  const clearPendingImage = () => {
+    if (pendingImagePreviewRef.current) {
+      URL.revokeObjectURL(pendingImagePreviewRef.current);
+      pendingImagePreviewRef.current = null;
+    }
+    setPendingImage(null);
+  };
 
   // Track active conversation for notifications
   useEffect(() => {
@@ -50,11 +60,19 @@ export function ChatThread({ conversationId }: { conversationId: string }) {
     return () => setActiveConversationId(null);
   }, [conversationId, setActiveConversationId]);
 
-  const scrollToBottom = (smooth = true) => {
+  const scrollToBottom = () => {
     requestAnimationFrame(() => {
       const el = scrollRef.current;
-      if (el) el.scrollTo({ top: el.scrollHeight, behavior: smooth ? "smooth" : "auto" });
+      if (!el) return;
+      el.scrollTop = el.scrollHeight;
     });
+  };
+
+  const handleScroll = () => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+    isNearBottomRef.current = distanceFromBottom <= 80;
   };
 
   // Load conversation, members, and messages
@@ -92,7 +110,8 @@ export function ChatThread({ conversationId }: { conversationId: string }) {
       if (!cancelled) {
         setMessages((msgs ?? []) as Message[]);
         setLoading(false);
-        scrollToBottom(false);
+        isNearBottomRef.current = true;
+        scrollToBottom();
         markRead(conversationId);
       }
     })();
@@ -132,7 +151,8 @@ export function ChatThread({ conversationId }: { conversationId: string }) {
             if (prev.some((m) => m.id === newMsg.id)) return prev;
             return [...prev, newMsg];
           });
-          scrollToBottom();
+          // Only auto-scroll when the user is already at or near the bottom.
+          if (isNearBottomRef.current) scrollToBottom();
         }
       )
       .on(
@@ -182,6 +202,20 @@ export function ChatThread({ conversationId }: { conversationId: string }) {
     };
   }, [conversationId, user?.id]);
 
+  useEffect(() => {
+    if (isNearBottomRef.current) {
+      scrollToBottom();
+    }
+  }, [messages]);
+
+  useEffect(() => {
+    return () => {
+      if (pendingImagePreviewRef.current) {
+        URL.revokeObjectURL(pendingImagePreviewRef.current);
+      }
+    };
+  }, []);
+
   const broadcastTyping = (isTyping: boolean) => {
     const ch = channelRef.current;
     if (!ch || !user) return;
@@ -196,8 +230,13 @@ export function ChatThread({ conversationId }: { conversationId: string }) {
   const lastTypingSentRef = useRef(0);
   const onChange = (v: string) => {
     setText(v);
+    if (v.length === 0) {
+      broadcastTyping(false);
+      lastTypingSentRef.current = 0;
+      return;
+    }
     const now = Date.now();
-    if (v.length > 0 && now - lastTypingSentRef.current > 1500) {
+    if (now - lastTypingSentRef.current > 1500) {
       broadcastTyping(true);
       lastTypingSentRef.current = now;
     }
@@ -214,7 +253,10 @@ export function ChatThread({ conversationId }: { conversationId: string }) {
       const path = `${user.id}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
       const { error: upErr } = await supabase.storage.from("chat-media").upload(path, pendingImage.file, { upsert: false, contentType: pendingImage.file.type });
       setUploading(false);
-      if (upErr) { toast.error(upErr.message); return; }
+      if (upErr) {
+        toast.error(upErr.message);
+        return;
+      }
       image_url = supabase.storage.from("chat-media").getPublicUrl(path).data.publicUrl;
     }
 
@@ -230,8 +272,7 @@ export function ChatThread({ conversationId }: { conversationId: string }) {
     };
     setMessages((prev) => [...prev, optimistic]);
     setText("");
-    setPendingImage(null);
-    scrollToBottom();
+    clearPendingImage();
     broadcastTyping(false);
 
     const { error, data } = await supabase
@@ -250,13 +291,32 @@ export function ChatThread({ conversationId }: { conversationId: string }) {
 
   const onPickFile = (f: File | null) => {
     if (!f) return;
-    if (!f.type.startsWith("image/")) { toast.error("Please pick an image"); return; }
-    if (f.size > 5 * 1024 * 1024) { toast.error("Max 5MB"); return; }
-    setPendingImage({ file: f, preview: URL.createObjectURL(f) });
+    if (!f.type.startsWith("image/")) {
+      toast.error("Please pick an image");
+      return;
+    }
+    if (f.size > 5 * 1024 * 1024) {
+      toast.error("Max 5MB");
+      return;
+    }
+    if (pendingImagePreviewRef.current) {
+      URL.revokeObjectURL(pendingImagePreviewRef.current);
+    }
+    const preview = URL.createObjectURL(f);
+    pendingImagePreviewRef.current = preview;
+    setPendingImage({ file: f, preview });
   };
 
+  if (authLoading) {
+    return <div className="h-full flex items-center justify-center text-sm text-muted-foreground">Loading chat…</div>;
+  }
+
+  if (!user) {
+    return <div className="h-full flex items-center justify-center text-sm text-muted-foreground">Please sign in to view this chat.</div>;
+  }
+
   const memberMap = new Map(members.map((m) => [m.id, m]));
-  const others = members.filter((m) => m.id !== user?.id);
+  const others = members.filter((m) => m.id !== user.id);
   const title = convo?.is_group ? convo.name ?? "Group" : others[0]?.display_name ?? "Chat";
   const subtitle = convo?.is_group
     ? `${members.length} members`
@@ -268,7 +328,7 @@ export function ChatThread({ conversationId }: { conversationId: string }) {
   const typingNames = Object.values(typing);
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full min-h-0 overflow-hidden">
       {/* Header */}
       <header className="flex items-center gap-3 px-4 md:px-6 py-3 border-b border-border bg-card/80 backdrop-blur sticky top-0 z-10">
         <button onClick={() => navigate({ to: "/app" })} className="md:hidden size-9 rounded-full grid place-items-center hover:bg-secondary">
@@ -291,7 +351,12 @@ export function ChatThread({ conversationId }: { conversationId: string }) {
       </header>
 
       {/* Messages */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto scroll-thin px-3 md:px-6 py-4 bg-[image:linear-gradient(180deg,var(--color-background),var(--color-secondary))]">
+      <div
+        ref={scrollRef}
+        onScroll={handleScroll}
+        className="flex-1 min-h-0 overflow-y-auto scroll-thin px-3 md:px-6 py-4 bg-[image:linear-gradient(180deg,var(--color-background),var(--color-secondary))]"
+        style={{ overflowAnchor: "none" }}
+      >
         {loading ? (
           <div className="text-sm text-muted-foreground text-center py-8">Loading messages…</div>
         ) : messages.length === 0 ? (
@@ -319,7 +384,7 @@ export function ChatThread({ conversationId }: { conversationId: string }) {
             <img src={pendingImage.preview} alt="preview" className="h-24 rounded-xl object-cover" />
             <button
               type="button"
-              onClick={() => setPendingImage(null)}
+              onClick={clearPendingImage}
               className="absolute -top-2 -right-2 size-6 rounded-full bg-foreground text-background grid place-items-center"
             >
               <X className="size-3.5" />
@@ -379,7 +444,7 @@ function MessageGroup({
   currentUserId: string;
   memberMap: Map<string, MemberProfile>;
   isGroup: boolean;
-  setMessages: React.Dispatch<React.SetStateAction<Message[]>>;
+  setMessages: Dispatch<SetStateAction<Message[]>>;
 }) {
   const [editing, setEditing] = useState<{ id: string; text: string } | null>(null);
 
