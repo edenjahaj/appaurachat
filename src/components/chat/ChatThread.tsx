@@ -281,7 +281,7 @@ export function ChatThread({ conversationId }: { conversationId: string }) {
         ) : messages.length === 0 ? (
           <div className="text-sm text-muted-foreground text-center py-12">No messages yet. Say hi 👋</div>
         ) : (
-          <MessageGroup messages={messages} currentUserId={user!.id} memberMap={memberMap} isGroup={!!convo?.is_group} />
+          <MessageGroup messages={messages} currentUserId={user!.id} memberMap={memberMap} isGroup={!!convo?.is_group} setMessages={setMessages} />
         )}
 
         {typingNames.length > 0 && (
