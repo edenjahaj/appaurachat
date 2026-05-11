@@ -343,6 +343,24 @@ export type Database = {
           },
         ]
       }
+      favorites: {
+        Row: {
+          created_at: string
+          friend_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          friend_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          friend_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       message_reactions: {
         Row: {
           created_at: string
@@ -514,6 +532,7 @@ export type Database = {
         Args: { _emoji: string; _message_id: string }
         Returns: undefined
       }
+      toggle_favorite: { Args: { _friend_id: string }; Returns: boolean }
     }
     Enums: {
       announcement_severity: "normal" | "important" | "critical"

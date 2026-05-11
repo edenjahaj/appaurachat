@@ -3,8 +3,9 @@ import { Link } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { useRealtime } from "@/lib/realtime-context";
+import { useFavorites } from "@/lib/favorites-context";
 import { Avatar } from "./Avatar";
-import { Plus, Search, Image as ImageIcon } from "lucide-react";
+import { Plus, Search, Image as ImageIcon, Star } from "lucide-react";
 import { formatDistanceToNowStrict } from "date-fns";
 import { CreateGroupDialog } from "./CreateGroupDialog";
 
@@ -20,6 +21,7 @@ interface ConvoRow {
 export function ConversationList({ activeId }: { activeId?: string }) {
   const { user } = useAuth();
   const { unread, isOnline } = useRealtime();
+  const { isFavorite } = useFavorites();
   const [convos, setConvos] = useState<ConvoRow[]>([]);
   const [q, setQ] = useState("");
   const [loading, setLoading] = useState(true);
@@ -102,11 +104,18 @@ export function ConversationList({ activeId }: { activeId?: string }) {
     };
   }, [user?.id]);
 
-  const filtered = convos.filter((c) => {
-    if (!q) return true;
-    const title = c.is_group ? c.name ?? "" : c.members.find((m) => m.user_id !== user?.id)?.profile?.display_name ?? "";
-    return title.toLowerCase().includes(q.toLowerCase());
-  });
+  const filtered = convos
+    .filter((c) => {
+      if (!q) return true;
+      const title = c.is_group ? c.name ?? "" : c.members.find((m) => m.user_id !== user?.id)?.profile?.display_name ?? "";
+      return title.toLowerCase().includes(q.toLowerCase());
+    })
+    .sort((a, b) => {
+      const aFav = !a.is_group && isFavorite(a.members.find((m) => m.user_id !== user?.id)?.user_id ?? "") ? 1 : 0;
+      const bFav = !b.is_group && isFavorite(b.members.find((m) => m.user_id !== user?.id)?.user_id ?? "") ? 1 : 0;
+      if (aFav !== bFav) return bFav - aFav;
+      return new Date(b.last_message_at).getTime() - new Date(a.last_message_at).getTime();
+    });
 
   return (
     <>
@@ -160,6 +169,7 @@ export function ConversationList({ activeId }: { activeId?: string }) {
             const count = unread[c.id] ?? 0;
             const otherId = others[0]?.user_id;
             const online = !c.is_group && otherId ? isOnline(otherId) : false;
+            const fav = !c.is_group && otherId ? isFavorite(otherId) : false;
 
             return (
               <Link
@@ -167,12 +177,13 @@ export function ConversationList({ activeId }: { activeId?: string }) {
                 to="/app/c/$conversationId"
                 params={{ conversationId: c.id }}
                 className={`flex gap-3 p-3 rounded-2xl mx-1 my-0.5 transition ${
-                  active ? "bg-accent" : "hover:bg-secondary"
+                  active ? "bg-accent" : fav ? "bg-amber-400/[0.06] hover:bg-amber-400/[0.12]" : "hover:bg-secondary"
                 }`}
               >
                 <div className="relative shrink-0">
                   <Avatar name={avatarName} src={avatarSrc} size={48} />
                   {online && <span className="absolute bottom-0 right-0 size-3 rounded-full bg-emerald-500 ring-2 ring-card" />}
+                  {fav && <span className="absolute -top-1 -right-1 size-4 rounded-full bg-amber-400 grid place-items-center ring-2 ring-card"><Star className="size-2.5 fill-white text-white" /></span>}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-2">

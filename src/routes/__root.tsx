@@ -9,6 +9,8 @@ import {
 import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider } from "@/lib/auth-context";
 import { RealtimeProvider } from "@/lib/realtime-context";
+import { ThemeProvider } from "@/lib/theme-context";
+import { FavoritesProvider } from "@/lib/favorites-context";
 import { ClientOnly } from "@/components/ClientOnly";
 import { InstallPrompt } from "@/components/InstallPrompt";
 
@@ -90,13 +92,17 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <ClientOnly>
-        <AuthProvider>
-          <RealtimeProvider>
-            <Outlet />
-            <Toaster position="top-center" richColors />
-            <InstallPrompt />
-          </RealtimeProvider>
-        </AuthProvider>
+        <ThemeProvider>
+          <AuthProvider>
+            <FavoritesProvider>
+              <RealtimeProvider>
+                <Outlet />
+                <Toaster position="top-center" richColors />
+                <InstallPrompt />
+              </RealtimeProvider>
+            </FavoritesProvider>
+          </AuthProvider>
+        </ThemeProvider>
       </ClientOnly>
     </QueryClientProvider>
   );

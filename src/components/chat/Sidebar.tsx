@@ -1,5 +1,5 @@
 import { Link, useLocation } from "@tanstack/react-router";
-import { MessageCircle, Users, Sparkles, LogOut, GraduationCap } from "lucide-react";
+import { MessageCircle, Users, Sparkles, LogOut, GraduationCap, Settings } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { useRealtime } from "@/lib/realtime-context";
 import { Avatar } from "./Avatar";
@@ -15,6 +15,7 @@ export function Sidebar() {
     { to: "/app/cls", icon: GraduationCap, label: "Classes", match: "/app/cls" as const },
     { to: "/app/people", icon: Users, label: "People", match: "/app/people" as const },
     { to: "/app/stories", icon: Sparkles, label: "Stories", match: "/app/stories" as const },
+    { to: "/app/settings", icon: Settings, label: "Settings", match: "/app/settings" as const },
   ];
 
   return (
@@ -53,7 +54,11 @@ export function Sidebar() {
         >
           <LogOut className="size-5" />
         </button>
-        {profile && <Avatar name={profile.display_name} src={profile.avatar_url} size={40} />}
+        {profile && (
+          <Link to="/app/profile" title="Profile">
+            <Avatar name={profile.display_name} src={profile.avatar_url} size={40} />
+          </Link>
+        )}
       </div>
     </aside>
   );
