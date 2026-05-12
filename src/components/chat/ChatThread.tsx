@@ -572,12 +572,14 @@ function MessageGroup({
   memberMap,
   isGroup,
   setMessages,
+  onReport,
 }: {
   messages: Message[];
   currentUserId: string;
   memberMap: Map<string, MemberProfile>;
   isGroup: boolean;
   setMessages: Dispatch<SetStateAction<Message[]>>;
+  onReport: (id: string) => void;
 }) {
   const [editing, setEditing] = useState<{ id: string; text: string } | null>(null);
 
@@ -630,14 +632,23 @@ function MessageGroup({
                   <span className="text-[11px] text-muted-foreground mb-0.5 px-2">{sender.display_name}</span>
                 )}
                 <div className="relative flex items-center gap-1">
-                  {isMe && !isEditing && !m.pending && (
+                  {!isEditing && !m.pending && (
                     <div className="opacity-0 group-hover:opacity-100 transition flex gap-0.5">
-                      <button onClick={() => setEditing({ id: m.id, text: m.content ?? "" })} className="size-7 rounded-full hover:bg-secondary grid place-items-center" title="Edit">
-                        <Pencil className="size-3.5" />
-                      </button>
-                      <button onClick={() => remove(m.id)} className="size-7 rounded-full hover:bg-destructive/10 hover:text-destructive grid place-items-center" title="Delete">
-                        <Trash2 className="size-3.5" />
-                      </button>
+                      {isMe && (
+                        <>
+                          <button onClick={() => setEditing({ id: m.id, text: m.content ?? "" })} className="size-7 rounded-full hover:bg-secondary grid place-items-center" title="Edit">
+                            <Pencil className="size-3.5" />
+                          </button>
+                          <button onClick={() => remove(m.id)} className="size-7 rounded-full hover:bg-destructive/10 hover:text-destructive grid place-items-center" title="Delete">
+                            <Trash2 className="size-3.5" />
+                          </button>
+                        </>
+                      )}
+                      {!isMe && (
+                        <button onClick={() => onReport(m.id)} className="size-7 rounded-full hover:bg-destructive/10 hover:text-destructive grid place-items-center" title="Report">
+                          <Flag className="size-3.5" />
+                        </button>
+                      )}
                     </div>
                   )}
                   {isEditing ? (
