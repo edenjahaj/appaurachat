@@ -215,8 +215,13 @@ export function ChatThread({ conversationId }: { conversationId: string }) {
             if (prev.some((m) => m.id === newMsg.id)) return prev;
             return [...prev, newMsg];
           });
-          // Only auto-scroll when the user is already at or near the bottom.
-          if (isNearBottomRef.current) scrollToBottom();
+          // Auto-scroll only if near bottom or it's our own message; otherwise increment unread.
+          if (isNearBottomRef.current || newMsg.sender_id === user.id) {
+            scrollToBottom(true);
+          } else {
+            setUnreadCount((c) => c + 1);
+            setShowJump(true);
+          }
         }
       )
       .on(
@@ -267,10 +272,10 @@ export function ChatThread({ conversationId }: { conversationId: string }) {
   }, [conversationId, user?.id]);
 
   useEffect(() => {
-    if (isNearBottomRef.current) {
-      scrollToBottom();
-    }
-  }, [messages]);
+    // Only auto-scroll for fresh sends (last is our pending). Realtime handles the rest.
+    const last = messages[messages.length - 1];
+    if (last?.pending && last.sender_id === user?.id) scrollToBottom();
+  }, [messages, user?.id]);
 
   useEffect(() => {
     return () => {
