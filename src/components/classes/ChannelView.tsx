@@ -39,6 +39,7 @@ export function ChannelView({ classId, channelId, channelName, isAdmin }: { clas
   const [search, setSearch] = useState("");
   const [showSearch, setShowSearch] = useState(false);
   const [showPinned, setShowPinned] = useState(false);
+  const [reportTarget, setReportTarget] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const channelRef = useRef<RealtimeChannel | null>(null);
 
