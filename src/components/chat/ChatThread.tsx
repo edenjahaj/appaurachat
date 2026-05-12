@@ -4,11 +4,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { useRealtime } from "@/lib/realtime-context";
 import { Avatar } from "./Avatar";
-import { Send, ArrowLeft, ImagePlus, X, Pencil, Trash2 } from "lucide-react";
+import { Send, ArrowLeft, ImagePlus, X, Pencil, Trash2, MoreVertical, BellOff, Bell, Ban, Flag, ChevronDown } from "lucide-react";
 import { MessageReactions } from "./MessageReactions";
 import { format, isToday, isYesterday } from "date-fns";
 import { toast } from "sonner";
 import type { RealtimeChannel } from "@supabase/supabase-js";
+import { isMuted, isBlocked, toggleMute, toggleBlock } from "@/lib/moderation";
+import { ReportDialog } from "./ReportDialog";
 
 interface Message {
   id: string;
@@ -45,6 +47,16 @@ export function ChatThread({ conversationId }: { conversationId: string }) {
   const typingTimeoutRef = useRef<Record<string, number>>({});
   const pendingImagePreviewRef = useRef<string | null>(null);
   const isNearBottomRef = useRef(true);
+  const oldestRef = useRef<string | null>(null);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [showJump, setShowJump] = useState(false);
+  const [muted, setMuted] = useState(false);
+  const [blocked, setBlocked] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [reportTarget, setReportTarget] = useState<string | null>(null);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const PAGE_SIZE = 40;
 
   const clearPendingImage = () => {
     if (pendingImagePreviewRef.current) {
@@ -60,11 +72,14 @@ export function ChatThread({ conversationId }: { conversationId: string }) {
     return () => setActiveConversationId(null);
   }, [conversationId, setActiveConversationId]);
 
-  const scrollToBottom = () => {
+  const scrollToBottom = (smooth = false) => {
     requestAnimationFrame(() => {
       const el = scrollRef.current;
       if (!el) return;
-      el.scrollTop = el.scrollHeight;
+      el.scrollTo({ top: el.scrollHeight, behavior: smooth ? "smooth" : "auto" });
+      isNearBottomRef.current = true;
+      setUnreadCount(0);
+      setShowJump(false);
     });
   };
 
@@ -72,14 +87,53 @@ export function ChatThread({ conversationId }: { conversationId: string }) {
     const el = scrollRef.current;
     if (!el) return;
     const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
-    isNearBottomRef.current = distanceFromBottom <= 80;
+    const near = distanceFromBottom <= 100;
+    isNearBottomRef.current = near;
+    setShowJump(!near);
+    if (near) setUnreadCount(0);
+    // Infinite scroll: load older when near top
+    if (el.scrollTop < 80 && hasMore && !loadingMore) {
+      void loadMore();
+    }
   };
 
-  // Load conversation, members, and messages
+  const loadMore = async () => {
+    if (!oldestRef.current || loadingMore || !hasMore) return;
+    setLoadingMore(true);
+    const el = scrollRef.current;
+    const prevHeight = el?.scrollHeight ?? 0;
+    const prevTop = el?.scrollTop ?? 0;
+    const { data } = await supabase
+      .from("messages")
+      .select("id, conversation_id, sender_id, content, image_url, created_at")
+      .eq("conversation_id", conversationId)
+      .lt("created_at", oldestRef.current)
+      .order("created_at", { ascending: false })
+      .limit(PAGE_SIZE);
+    const older = ((data ?? []) as Message[]).reverse();
+    if (older.length === 0) {
+      setHasMore(false);
+    } else {
+      oldestRef.current = older[0].created_at;
+      setMessages((prev) => [...older, ...prev]);
+      // Preserve scroll position after prepending
+      requestAnimationFrame(() => {
+        const e2 = scrollRef.current;
+        if (!e2) return;
+        e2.scrollTop = e2.scrollHeight - prevHeight + prevTop;
+      });
+      if (older.length < PAGE_SIZE) setHasMore(false);
+    }
+    setLoadingMore(false);
+  };
+
+  // Load conversation, members, and initial page of messages
   useEffect(() => {
     if (!user || !conversationId) return;
     let cancelled = false;
     setLoading(true);
+    setHasMore(true);
+    oldestRef.current = null;
 
     (async () => {
       const { data: c } = await supabase
@@ -101,18 +155,28 @@ export function ChatThread({ conversationId }: { conversationId: string }) {
         .in("id", ids);
       if (!cancelled) setMembers((ps ?? []) as MemberProfile[]);
 
+      // Load most recent page in DESC then reverse for chronological
       const { data: msgs } = await supabase
         .from("messages")
         .select("id, conversation_id, sender_id, content, image_url, created_at")
         .eq("conversation_id", conversationId)
-        .order("created_at", { ascending: true })
-        .limit(200);
+        .order("created_at", { ascending: false })
+        .limit(PAGE_SIZE);
+      const ordered = ((msgs ?? []) as Message[]).reverse();
       if (!cancelled) {
-        setMessages((msgs ?? []) as Message[]);
+        setMessages(ordered);
+        if (ordered.length > 0) oldestRef.current = ordered[0].created_at;
+        if (ordered.length < PAGE_SIZE) setHasMore(false);
         setLoading(false);
         isNearBottomRef.current = true;
         scrollToBottom();
         markRead(conversationId);
+
+        // Mute / block status
+        setMuted(await isMuted(conversationId, user.id));
+        const otherIds = ids.filter((id) => id !== user.id);
+        if (otherIds.length === 1) setBlocked(await isBlocked(otherIds[0], user.id));
+        else setBlocked(false);
       }
     })();
 
@@ -151,8 +215,13 @@ export function ChatThread({ conversationId }: { conversationId: string }) {
             if (prev.some((m) => m.id === newMsg.id)) return prev;
             return [...prev, newMsg];
           });
-          // Only auto-scroll when the user is already at or near the bottom.
-          if (isNearBottomRef.current) scrollToBottom();
+          // Auto-scroll only if near bottom or it's our own message; otherwise increment unread.
+          if (isNearBottomRef.current || newMsg.sender_id === user.id) {
+            scrollToBottom(true);
+          } else {
+            setUnreadCount((c) => c + 1);
+            setShowJump(true);
+          }
         }
       )
       .on(
@@ -203,10 +272,10 @@ export function ChatThread({ conversationId }: { conversationId: string }) {
   }, [conversationId, user?.id]);
 
   useEffect(() => {
-    if (isNearBottomRef.current) {
-      scrollToBottom();
-    }
-  }, [messages]);
+    // Only auto-scroll for fresh sends (last is our pending). Realtime handles the rest.
+    const last = messages[messages.length - 1];
+    if (last?.pending && last.sender_id === user?.id) scrollToBottom();
+  }, [messages, user?.id]);
 
   useEffect(() => {
     return () => {
@@ -245,6 +314,7 @@ export function ChatThread({ conversationId }: { conversationId: string }) {
   const send = async () => {
     const content = text.trim();
     if ((!content && !pendingImage) || !user || !conversationId) return;
+    if (blocked) { toast.error("You blocked this user. Unblock to send messages."); return; }
 
     let image_url: string | null = null;
     if (pendingImage) {
@@ -324,11 +394,25 @@ export function ChatThread({ conversationId }: { conversationId: string }) {
     ? `@${others[0].username}`
     : "";
   const avatarSrc = convo?.is_group ? null : others[0]?.avatar_url ?? null;
+  const dmOther = !convo?.is_group ? others[0] : null;
+
+  const onToggleMute = async () => {
+    try { const v = await toggleMute(conversationId); setMuted(v); toast.success(v ? "Conversation muted" : "Unmuted"); }
+    catch (e: any) { toast.error(e.message); }
+    setMenuOpen(false);
+  };
+  const onToggleBlock = async () => {
+    if (!dmOther) return;
+    if (!blocked && !confirm(`Block ${dmOther.display_name}? They won't be able to reach you.`)) return;
+    try { const v = await toggleBlock(dmOther.id); setBlocked(v); toast.success(v ? "User blocked" : "User unblocked"); }
+    catch (e: any) { toast.error(e.message); }
+    setMenuOpen(false);
+  };
 
   const typingNames = Object.values(typing);
 
   return (
-    <div className="flex flex-col h-full min-h-0 overflow-hidden">
+    <div className="relative flex flex-col h-full min-h-0 overflow-hidden">
       {/* Header */}
       <header className="flex items-center gap-3 px-4 md:px-6 py-3 border-b border-border bg-card/80 backdrop-blur sticky top-0 z-10">
         <button onClick={() => navigate({ to: "/app" })} className="md:hidden size-9 rounded-full grid place-items-center hover:bg-secondary">
@@ -340,13 +424,39 @@ export function ChatThread({ conversationId }: { conversationId: string }) {
             <span className="absolute bottom-0 right-0 size-2.5 rounded-full bg-emerald-500 ring-2 ring-card" />
           )}
         </div>
-        <div className="min-w-0">
-          <div className="font-semibold truncate">{title}</div>
+        <div className="min-w-0 flex-1">
+          <div className="font-semibold truncate flex items-center gap-1.5">
+            {title}
+            {muted && <BellOff className="size-3.5 text-muted-foreground" />}
+            {blocked && <Ban className="size-3.5 text-destructive" />}
+          </div>
           <div className="text-xs text-muted-foreground truncate">
             {typingNames.length > 0
               ? <span className="text-primary">typing…</span>
               : !convo?.is_group && others[0] && isOnline(others[0].id) ? <span className="text-emerald-600">Online</span> : subtitle}
           </div>
+        </div>
+        <div className="relative">
+          <button onClick={() => setMenuOpen((s) => !s)} className="size-9 rounded-full grid place-items-center hover:bg-secondary" aria-label="More">
+            <MoreVertical className="size-5" />
+          </button>
+          {menuOpen && (
+            <>
+              <div className="fixed inset-0 z-20" onClick={() => setMenuOpen(false)} />
+              <div className="absolute right-0 top-11 z-30 w-56 rounded-2xl bg-card border border-border shadow-xl overflow-hidden animate-in fade-in zoom-in-95">
+                <button onClick={onToggleMute} className="w-full flex items-center gap-3 px-4 py-3 hover:bg-secondary text-sm">
+                  {muted ? <Bell className="size-4" /> : <BellOff className="size-4" />}
+                  <span>{muted ? "Unmute conversation" : "Mute conversation"}</span>
+                </button>
+                {dmOther && (
+                  <button onClick={onToggleBlock} className="w-full flex items-center gap-3 px-4 py-3 hover:bg-secondary text-sm text-destructive">
+                    <Ban className="size-4" />
+                    <span>{blocked ? "Unblock user" : "Block user"}</span>
+                  </button>
+                )}
+              </div>
+            </>
+          )}
         </div>
       </header>
 
@@ -354,15 +464,21 @@ export function ChatThread({ conversationId }: { conversationId: string }) {
       <div
         ref={scrollRef}
         onScroll={handleScroll}
-        className="flex-1 min-h-0 overflow-y-auto scroll-thin px-3 md:px-6 py-4 bg-[image:linear-gradient(180deg,var(--color-background),var(--color-secondary))]"
+        className="relative flex-1 min-h-0 overflow-y-auto scroll-thin scroll-smooth-y px-3 md:px-6 py-4 bg-[image:linear-gradient(180deg,var(--color-background),var(--color-secondary))]"
         style={{ overflowAnchor: "none" }}
       >
+        {loadingMore && (
+          <div className="text-center py-2 text-xs text-muted-foreground">Loading older messages…</div>
+        )}
+        {!hasMore && messages.length > 0 && (
+          <div className="text-center py-2 text-[11px] text-muted-foreground">— Beginning of conversation —</div>
+        )}
         {loading ? (
           <div className="text-sm text-muted-foreground text-center py-8">Loading messages…</div>
         ) : messages.length === 0 ? (
           <div className="text-sm text-muted-foreground text-center py-12">No messages yet. Say hi 👋</div>
         ) : (
-          <MessageGroup messages={messages} currentUserId={user!.id} memberMap={memberMap} isGroup={!!convo?.is_group} setMessages={setMessages} />
+          <MessageGroup messages={messages} currentUserId={user!.id} memberMap={memberMap} isGroup={!!convo?.is_group} setMessages={setMessages} onReport={(id) => setReportTarget(id)} />
         )}
 
         {typingNames.length > 0 && (
@@ -376,6 +492,24 @@ export function ChatThread({ conversationId }: { conversationId: string }) {
           </div>
         )}
       </div>
+
+      {/* Jump-to-bottom button */}
+      {showJump && (
+        <button
+          onClick={() => scrollToBottom(true)}
+          className="absolute right-4 bottom-24 md:bottom-28 z-10 size-11 rounded-full bg-primary text-primary-foreground shadow-lg grid place-items-center hover:opacity-90 transition animate-in fade-in zoom-in-95"
+          aria-label="Jump to latest"
+        >
+          <ChevronDown className="size-5" />
+          {unreadCount > 0 && (
+            <span className="absolute -top-1 -right-1 min-w-5 h-5 px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold grid place-items-center">
+              {unreadCount > 99 ? "99+" : unreadCount}
+            </span>
+          )}
+        </button>
+      )}
+
+      {reportTarget && <ReportDialog messageId={reportTarget} scope="dm" onClose={() => setReportTarget(null)} />}
 
       {/* Composer */}
       <div className="border-t border-border bg-card px-3 md:px-6 py-3 pb-[max(env(safe-area-inset-bottom),0.75rem)]">
@@ -439,12 +573,14 @@ function MessageGroup({
   memberMap,
   isGroup,
   setMessages,
+  onReport,
 }: {
   messages: Message[];
   currentUserId: string;
   memberMap: Map<string, MemberProfile>;
   isGroup: boolean;
   setMessages: Dispatch<SetStateAction<Message[]>>;
+  onReport: (id: string) => void;
 }) {
   const [editing, setEditing] = useState<{ id: string; text: string } | null>(null);
 
@@ -497,14 +633,23 @@ function MessageGroup({
                   <span className="text-[11px] text-muted-foreground mb-0.5 px-2">{sender.display_name}</span>
                 )}
                 <div className="relative flex items-center gap-1">
-                  {isMe && !isEditing && !m.pending && (
+                  {!isEditing && !m.pending && (
                     <div className="opacity-0 group-hover:opacity-100 transition flex gap-0.5">
-                      <button onClick={() => setEditing({ id: m.id, text: m.content ?? "" })} className="size-7 rounded-full hover:bg-secondary grid place-items-center" title="Edit">
-                        <Pencil className="size-3.5" />
-                      </button>
-                      <button onClick={() => remove(m.id)} className="size-7 rounded-full hover:bg-destructive/10 hover:text-destructive grid place-items-center" title="Delete">
-                        <Trash2 className="size-3.5" />
-                      </button>
+                      {isMe && (
+                        <>
+                          <button onClick={() => setEditing({ id: m.id, text: m.content ?? "" })} className="size-7 rounded-full hover:bg-secondary grid place-items-center" title="Edit">
+                            <Pencil className="size-3.5" />
+                          </button>
+                          <button onClick={() => remove(m.id)} className="size-7 rounded-full hover:bg-destructive/10 hover:text-destructive grid place-items-center" title="Delete">
+                            <Trash2 className="size-3.5" />
+                          </button>
+                        </>
+                      )}
+                      {!isMe && (
+                        <button onClick={() => onReport(m.id)} className="size-7 rounded-full hover:bg-destructive/10 hover:text-destructive grid place-items-center" title="Report">
+                          <Flag className="size-3.5" />
+                        </button>
+                      )}
                     </div>
                   )}
                   {isEditing ? (

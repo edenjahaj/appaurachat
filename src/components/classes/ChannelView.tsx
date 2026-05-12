@@ -2,11 +2,12 @@ import { useEffect, useRef, useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { Avatar } from "@/components/chat/Avatar";
-import { Send, Hash, Search, Trash2, Pencil, Reply, Pin, X, PinOff } from "lucide-react";
+import { Send, Hash, Search, Trash2, Pencil, Reply, Pin, X, PinOff, Flag } from "lucide-react";
 import { format, isToday, isYesterday } from "date-fns";
 import { toast } from "sonner";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 import { MessageReactions } from "@/components/chat/MessageReactions";
+import { ReportDialog } from "@/components/chat/ReportDialog";
 
 interface Msg {
   id: string;
@@ -38,6 +39,7 @@ export function ChannelView({ classId, channelId, channelName, isAdmin }: { clas
   const [search, setSearch] = useState("");
   const [showSearch, setShowSearch] = useState(false);
   const [showPinned, setShowPinned] = useState(false);
+  const [reportTarget, setReportTarget] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const channelRef = useRef<RealtimeChannel | null>(null);
 
@@ -277,6 +279,11 @@ export function ChannelView({ classId, channelId, channelName, isAdmin }: { clas
                           <Trash2 className="size-3.5" />
                         </button>
                       )}
+                      {!mine && (
+                        <button onClick={() => setReportTarget(m.id)} className="size-7 rounded-full hover:bg-destructive/10 hover:text-destructive grid place-items-center" title="Report">
+                          <Flag className="size-3.5" />
+                        </button>
+                      )}
                     </div>
                   )}
                 </div>
@@ -309,6 +316,7 @@ export function ChannelView({ classId, channelId, channelName, isAdmin }: { clas
           </button>
         </div>
       </div>
+      {reportTarget && <ReportDialog messageId={reportTarget} scope="channel" onClose={() => setReportTarget(null)} />}
     </div>
   );
 }

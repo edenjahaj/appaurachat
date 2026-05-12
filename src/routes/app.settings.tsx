@@ -2,9 +2,10 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useAuth } from "@/lib/auth-context";
 import { useTheme } from "@/lib/theme-context";
 import { Avatar } from "@/components/chat/Avatar";
-import { Sun, Moon, Monitor, User as UserIcon, Bell, BellOff, LogOut, ChevronRight, Volume2, VolumeX, Info, Shield } from "lucide-react";
+import { Sun, Moon, Monitor, User as UserIcon, Bell, BellOff, LogOut, ChevronRight, Volume2, VolumeX, Info, Shield, Sparkles } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { showUpdateAgain, CURRENT_UPDATE } from "@/components/UpdateAnnouncement";
 
 const SOUND_KEY = "aura.sound";
 const NOTIF_KEY = "aura.notif";
@@ -86,10 +87,22 @@ function SettingsPage() {
         </Section>
 
         <Section title="About">
-          <Row icon={Info} label="AURA" hint="v2.0 — Phase 3 update: themes, settings, best friends, mobile nav">
+          <Row icon={Info} label="AURA" hint={`${CURRENT_UPDATE.version} — ${CURRENT_UPDATE.title}`}>
             <></>
           </Row>
+          <button
+            onClick={() => { showUpdateAgain(); window.dispatchEvent(new Event("aura:show-update")); }}
+            className="w-full flex items-center gap-3 p-4 hover:bg-secondary/40 transition text-left"
+          >
+            <span className="size-9 rounded-xl bg-primary/10 text-primary grid place-items-center"><Sparkles className="size-4" /></span>
+            <span className="flex-1 font-semibold text-sm">Show "What's new" again</span>
+            <ChevronRight className="size-4 text-muted-foreground" />
+          </button>
         </Section>
+
+        <div className="text-center text-xs text-muted-foreground pt-2">
+          Made with <span className="text-primary">♥</span> · by eden
+        </div>
       </div>
     </div>
   );

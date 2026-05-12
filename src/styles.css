@@ -119,7 +119,11 @@
     color: var(--color-foreground);
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
   }
+  /* Smooth scrolling everywhere with momentum on touch */
+  .scroll-smooth-y { scroll-behavior: smooth; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
 }
 
 /* Story backgrounds */
