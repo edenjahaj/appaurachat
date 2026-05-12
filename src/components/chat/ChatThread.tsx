@@ -412,7 +412,7 @@ export function ChatThread({ conversationId }: { conversationId: string }) {
   const typingNames = Object.values(typing);
 
   return (
-    <div className="flex flex-col h-full min-h-0 overflow-hidden">
+    <div className="relative flex flex-col h-full min-h-0 overflow-hidden">
       {/* Header */}
       <header className="flex items-center gap-3 px-4 md:px-6 py-3 border-b border-border bg-card/80 backdrop-blur sticky top-0 z-10">
         <button onClick={() => navigate({ to: "/app" })} className="md:hidden size-9 rounded-full grid place-items-center hover:bg-secondary">
