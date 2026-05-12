@@ -72,11 +72,14 @@ export function ChatThread({ conversationId }: { conversationId: string }) {
     return () => setActiveConversationId(null);
   }, [conversationId, setActiveConversationId]);
 
-  const scrollToBottom = () => {
+  const scrollToBottom = (smooth = false) => {
     requestAnimationFrame(() => {
       const el = scrollRef.current;
       if (!el) return;
-      el.scrollTop = el.scrollHeight;
+      el.scrollTo({ top: el.scrollHeight, behavior: smooth ? "smooth" : "auto" });
+      isNearBottomRef.current = true;
+      setUnreadCount(0);
+      setShowJump(false);
     });
   };
 
@@ -84,14 +87,53 @@ export function ChatThread({ conversationId }: { conversationId: string }) {
     const el = scrollRef.current;
     if (!el) return;
     const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
-    isNearBottomRef.current = distanceFromBottom <= 80;
+    const near = distanceFromBottom <= 100;
+    isNearBottomRef.current = near;
+    setShowJump(!near);
+    if (near) setUnreadCount(0);
+    // Infinite scroll: load older when near top
+    if (el.scrollTop < 80 && hasMore && !loadingMore) {
+      void loadMore();
+    }
   };
 
-  // Load conversation, members, and messages
+  const loadMore = async () => {
+    if (!oldestRef.current || loadingMore || !hasMore) return;
+    setLoadingMore(true);
+    const el = scrollRef.current;
+    const prevHeight = el?.scrollHeight ?? 0;
+    const prevTop = el?.scrollTop ?? 0;
+    const { data } = await supabase
+      .from("messages")
+      .select("id, conversation_id, sender_id, content, image_url, created_at")
+      .eq("conversation_id", conversationId)
+      .lt("created_at", oldestRef.current)
+      .order("created_at", { ascending: false })
+      .limit(PAGE_SIZE);
+    const older = ((data ?? []) as Message[]).reverse();
+    if (older.length === 0) {
+      setHasMore(false);
+    } else {
+      oldestRef.current = older[0].created_at;
+      setMessages((prev) => [...older, ...prev]);
+      // Preserve scroll position after prepending
+      requestAnimationFrame(() => {
+        const e2 = scrollRef.current;
+        if (!e2) return;
+        e2.scrollTop = e2.scrollHeight - prevHeight + prevTop;
+      });
+      if (older.length < PAGE_SIZE) setHasMore(false);
+    }
+    setLoadingMore(false);
+  };
+
+  // Load conversation, members, and initial page of messages
   useEffect(() => {
     if (!user || !conversationId) return;
     let cancelled = false;
     setLoading(true);
+    setHasMore(true);
+    oldestRef.current = null;
 
     (async () => {
       const { data: c } = await supabase
@@ -113,18 +155,28 @@ export function ChatThread({ conversationId }: { conversationId: string }) {
         .in("id", ids);
       if (!cancelled) setMembers((ps ?? []) as MemberProfile[]);
 
+      // Load most recent page in DESC then reverse for chronological
       const { data: msgs } = await supabase
         .from("messages")
         .select("id, conversation_id, sender_id, content, image_url, created_at")
         .eq("conversation_id", conversationId)
-        .order("created_at", { ascending: true })
-        .limit(200);
+        .order("created_at", { ascending: false })
+        .limit(PAGE_SIZE);
+      const ordered = ((msgs ?? []) as Message[]).reverse();
       if (!cancelled) {
-        setMessages((msgs ?? []) as Message[]);
+        setMessages(ordered);
+        if (ordered.length > 0) oldestRef.current = ordered[0].created_at;
+        if (ordered.length < PAGE_SIZE) setHasMore(false);
         setLoading(false);
         isNearBottomRef.current = true;
         scrollToBottom();
         markRead(conversationId);
+
+        // Mute / block status
+        setMuted(await isMuted(conversationId, user.id));
+        const otherIds = ids.filter((id) => id !== user.id);
+        if (otherIds.length === 1) setBlocked(await isBlocked(otherIds[0], user.id));
+        else setBlocked(false);
       }
     })();
 
