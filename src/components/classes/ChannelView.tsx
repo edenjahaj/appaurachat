@@ -279,6 +279,11 @@ export function ChannelView({ classId, channelId, channelName, isAdmin }: { clas
                           <Trash2 className="size-3.5" />
                         </button>
                       )}
+                      {!mine && (
+                        <button onClick={() => setReportTarget(m.id)} className="size-7 rounded-full hover:bg-destructive/10 hover:text-destructive grid place-items-center" title="Report">
+                          <Flag className="size-3.5" />
+                        </button>
+                      )}
                     </div>
                   )}
                 </div>
