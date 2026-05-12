@@ -4,11 +4,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { useRealtime } from "@/lib/realtime-context";
 import { Avatar } from "./Avatar";
-import { Send, ArrowLeft, ImagePlus, X, Pencil, Trash2 } from "lucide-react";
+import { Send, ArrowLeft, ImagePlus, X, Pencil, Trash2, MoreVertical, BellOff, Bell, Ban, Flag, ChevronDown } from "lucide-react";
 import { MessageReactions } from "./MessageReactions";
 import { format, isToday, isYesterday } from "date-fns";
 import { toast } from "sonner";
 import type { RealtimeChannel } from "@supabase/supabase-js";
+import { isMuted, isBlocked, toggleMute, toggleBlock } from "@/lib/moderation";
+import { ReportDialog } from "./ReportDialog";
 
 interface Message {
   id: string;
