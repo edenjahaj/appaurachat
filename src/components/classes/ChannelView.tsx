@@ -316,6 +316,7 @@ export function ChannelView({ classId, channelId, channelName, isAdmin }: { clas
           </button>
         </div>
       </div>
+      {reportTarget && <ReportDialog messageId={reportTarget} scope="channel" onClose={() => setReportTarget(null)} />}
     </div>
   );
 }
