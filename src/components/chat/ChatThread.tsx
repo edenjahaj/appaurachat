@@ -393,6 +393,20 @@ export function ChatThread({ conversationId }: { conversationId: string }) {
     ? `@${others[0].username}`
     : "";
   const avatarSrc = convo?.is_group ? null : others[0]?.avatar_url ?? null;
+  const dmOther = !convo?.is_group ? others[0] : null;
+
+  const onToggleMute = async () => {
+    try { const v = await toggleMute(conversationId); setMuted(v); toast.success(v ? "Conversation muted" : "Unmuted"); }
+    catch (e: any) { toast.error(e.message); }
+    setMenuOpen(false);
+  };
+  const onToggleBlock = async () => {
+    if (!dmOther) return;
+    if (!blocked && !confirm(`Block ${dmOther.display_name}? They won't be able to reach you.`)) return;
+    try { const v = await toggleBlock(dmOther.id); setBlocked(v); toast.success(v ? "User blocked" : "User unblocked"); }
+    catch (e: any) { toast.error(e.message); }
+    setMenuOpen(false);
+  };
 
   const typingNames = Object.values(typing);
 
@@ -409,13 +423,39 @@ export function ChatThread({ conversationId }: { conversationId: string }) {
             <span className="absolute bottom-0 right-0 size-2.5 rounded-full bg-emerald-500 ring-2 ring-card" />
           )}
         </div>
-        <div className="min-w-0">
-          <div className="font-semibold truncate">{title}</div>
+        <div className="min-w-0 flex-1">
+          <div className="font-semibold truncate flex items-center gap-1.5">
+            {title}
+            {muted && <BellOff className="size-3.5 text-muted-foreground" />}
+            {blocked && <Ban className="size-3.5 text-destructive" />}
+          </div>
           <div className="text-xs text-muted-foreground truncate">
             {typingNames.length > 0
               ? <span className="text-primary">typing…</span>
               : !convo?.is_group && others[0] && isOnline(others[0].id) ? <span className="text-emerald-600">Online</span> : subtitle}
           </div>
+        </div>
+        <div className="relative">
+          <button onClick={() => setMenuOpen((s) => !s)} className="size-9 rounded-full grid place-items-center hover:bg-secondary" aria-label="More">
+            <MoreVertical className="size-5" />
+          </button>
+          {menuOpen && (
+            <>
+              <div className="fixed inset-0 z-20" onClick={() => setMenuOpen(false)} />
+              <div className="absolute right-0 top-11 z-30 w-56 rounded-2xl bg-card border border-border shadow-xl overflow-hidden animate-in fade-in zoom-in-95">
+                <button onClick={onToggleMute} className="w-full flex items-center gap-3 px-4 py-3 hover:bg-secondary text-sm">
+                  {muted ? <Bell className="size-4" /> : <BellOff className="size-4" />}
+                  <span>{muted ? "Unmute conversation" : "Mute conversation"}</span>
+                </button>
+                {dmOther && (
+                  <button onClick={onToggleBlock} className="w-full flex items-center gap-3 px-4 py-3 hover:bg-secondary text-sm text-destructive">
+                    <Ban className="size-4" />
+                    <span>{blocked ? "Unblock user" : "Block user"}</span>
+                  </button>
+                )}
+              </div>
+            </>
+          )}
         </div>
       </header>
 
@@ -423,15 +463,21 @@ export function ChatThread({ conversationId }: { conversationId: string }) {
       <div
         ref={scrollRef}
         onScroll={handleScroll}
-        className="flex-1 min-h-0 overflow-y-auto scroll-thin px-3 md:px-6 py-4 bg-[image:linear-gradient(180deg,var(--color-background),var(--color-secondary))]"
+        className="relative flex-1 min-h-0 overflow-y-auto scroll-thin scroll-smooth-y px-3 md:px-6 py-4 bg-[image:linear-gradient(180deg,var(--color-background),var(--color-secondary))]"
         style={{ overflowAnchor: "none" }}
       >
+        {loadingMore && (
+          <div className="text-center py-2 text-xs text-muted-foreground">Loading older messages…</div>
+        )}
+        {!hasMore && messages.length > 0 && (
+          <div className="text-center py-2 text-[11px] text-muted-foreground">— Beginning of conversation —</div>
+        )}
         {loading ? (
           <div className="text-sm text-muted-foreground text-center py-8">Loading messages…</div>
         ) : messages.length === 0 ? (
           <div className="text-sm text-muted-foreground text-center py-12">No messages yet. Say hi 👋</div>
         ) : (
-          <MessageGroup messages={messages} currentUserId={user!.id} memberMap={memberMap} isGroup={!!convo?.is_group} setMessages={setMessages} />
+          <MessageGroup messages={messages} currentUserId={user!.id} memberMap={memberMap} isGroup={!!convo?.is_group} setMessages={setMessages} onReport={(id) => setReportTarget(id)} />
         )}
 
         {typingNames.length > 0 && (
@@ -445,6 +491,24 @@ export function ChatThread({ conversationId }: { conversationId: string }) {
           </div>
         )}
       </div>
+
+      {/* Jump-to-bottom button */}
+      {showJump && (
+        <button
+          onClick={() => scrollToBottom(true)}
+          className="absolute right-4 bottom-24 md:bottom-28 z-10 size-11 rounded-full bg-primary text-primary-foreground shadow-lg grid place-items-center hover:opacity-90 transition animate-in fade-in zoom-in-95"
+          aria-label="Jump to latest"
+        >
+          <ChevronDown className="size-5" />
+          {unreadCount > 0 && (
+            <span className="absolute -top-1 -right-1 min-w-5 h-5 px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold grid place-items-center">
+              {unreadCount > 99 ? "99+" : unreadCount}
+            </span>
+          )}
+        </button>
+      )}
+
+      {reportTarget && <ReportDialog messageId={reportTarget} scope="dm" onClose={() => setReportTarget(null)} />}
 
       {/* Composer */}
       <div className="border-t border-border bg-card px-3 md:px-6 py-3 pb-[max(env(safe-area-inset-bottom),0.75rem)]">
