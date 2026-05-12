@@ -2,11 +2,12 @@ import { useEffect, useRef, useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { Avatar } from "@/components/chat/Avatar";
-import { Send, Hash, Search, Trash2, Pencil, Reply, Pin, X, PinOff } from "lucide-react";
+import { Send, Hash, Search, Trash2, Pencil, Reply, Pin, X, PinOff, Flag } from "lucide-react";
 import { format, isToday, isYesterday } from "date-fns";
 import { toast } from "sonner";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 import { MessageReactions } from "@/components/chat/MessageReactions";
+import { ReportDialog } from "@/components/chat/ReportDialog";
 
 interface Msg {
   id: string;
