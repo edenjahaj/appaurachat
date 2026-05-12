@@ -314,6 +314,7 @@ export function ChatThread({ conversationId }: { conversationId: string }) {
   const send = async () => {
     const content = text.trim();
     if ((!content && !pendingImage) || !user || !conversationId) return;
+    if (blocked) { toast.error("You blocked this user. Unblock to send messages."); return; }
 
     let image_url: string | null = null;
     if (pendingImage) {
