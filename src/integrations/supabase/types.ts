@@ -284,6 +284,24 @@ export type Database = {
           },
         ]
       }
+      conversation_mutes: {
+        Row: {
+          conversation_id: string
+          created_at: string
+          user_id: string
+        }
+        Insert: {
+          conversation_id: string
+          created_at?: string
+          user_id: string
+        }
+        Update: {
+          conversation_id?: string
+          created_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       conversations: {
         Row: {
           avatar_url: string | null
@@ -390,6 +408,36 @@ export type Database = {
           },
         ]
       }
+      message_reports: {
+        Row: {
+          created_at: string
+          details: string | null
+          id: string
+          message_id: string
+          reason: string
+          reporter_id: string
+          scope: string
+        }
+        Insert: {
+          created_at?: string
+          details?: string | null
+          id?: string
+          message_id: string
+          reason: string
+          reporter_id: string
+          scope: string
+        }
+        Update: {
+          created_at?: string
+          details?: string | null
+          id?: string
+          message_id?: string
+          reason?: string
+          reporter_id?: string
+          scope?: string
+        }
+        Relationships: []
+      }
       messages: {
         Row: {
           content: string | null
@@ -485,6 +533,24 @@ export type Database = {
         }
         Relationships: []
       }
+      user_blocks: {
+        Row: {
+          blocked_user_id: string
+          created_at: string
+          user_id: string
+        }
+        Insert: {
+          blocked_user_id: string
+          created_at?: string
+          user_id: string
+        }
+        Update: {
+          blocked_user_id?: string
+          created_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -524,6 +590,7 @@ export type Database = {
         Args: { _conversation_id: string }
         Returns: undefined
       }
+      toggle_block: { Args: { _blocked_user_id: string }; Returns: boolean }
       toggle_channel_reaction: {
         Args: { _emoji: string; _message_id: string }
         Returns: undefined
@@ -533,6 +600,7 @@ export type Database = {
         Returns: undefined
       }
       toggle_favorite: { Args: { _friend_id: string }; Returns: boolean }
+      toggle_mute: { Args: { _conversation_id: string }; Returns: boolean }
     }
     Enums: {
       announcement_severity: "normal" | "important" | "critical"
