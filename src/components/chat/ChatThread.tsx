@@ -47,6 +47,16 @@ export function ChatThread({ conversationId }: { conversationId: string }) {
   const typingTimeoutRef = useRef<Record<string, number>>({});
   const pendingImagePreviewRef = useRef<string | null>(null);
   const isNearBottomRef = useRef(true);
+  const oldestRef = useRef<string | null>(null);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [showJump, setShowJump] = useState(false);
+  const [muted, setMuted] = useState(false);
+  const [blocked, setBlocked] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [reportTarget, setReportTarget] = useState<string | null>(null);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const PAGE_SIZE = 40;
 
   const clearPendingImage = () => {
     if (pendingImagePreviewRef.current) {
