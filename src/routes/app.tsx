@@ -4,6 +4,7 @@ import { useAuth } from "@/lib/auth-context";
 import { Sidebar } from "@/components/chat/Sidebar";
 import { MobileBottomNav } from "@/components/chat/MobileBottomNav";
 import { UpdateAnnouncement } from "@/components/UpdateAnnouncement";
+import { PlatformBanner } from "@/components/PlatformBanner";
 
 export const Route = createFileRoute("/app")({
   component: AppLayout,
