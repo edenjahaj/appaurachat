@@ -4,6 +4,7 @@ import { useAuth } from "@/lib/auth-context";
 import { Sidebar } from "@/components/chat/Sidebar";
 import { MobileBottomNav } from "@/components/chat/MobileBottomNav";
 import { UpdateAnnouncement } from "@/components/UpdateAnnouncement";
+import { PlatformBanner } from "@/components/PlatformBanner";
 
 export const Route = createFileRoute("/app")({
   component: AppLayout,
@@ -31,6 +32,7 @@ function AppLayout() {
     <div className="h-[100dvh] w-screen flex bg-background overflow-hidden">
       <div className="hidden md:flex"><Sidebar /></div>
       <main className={`flex-1 min-w-0 min-h-0 flex flex-col ${isChatThread ? "pb-0" : "pb-[60px] md:pb-0"}`}>
+        {!isChatThread && <PlatformBanner />}
         <Outlet />
       </main>
       {!isChatThread && <MobileBottomNav />}

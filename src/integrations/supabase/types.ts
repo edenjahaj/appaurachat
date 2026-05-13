@@ -81,6 +81,36 @@ export type Database = {
           },
         ]
       }
+      audit_logs: {
+        Row: {
+          action: string
+          actor_id: string
+          created_at: string
+          details: Json
+          id: string
+          target_id: string | null
+          target_type: string | null
+        }
+        Insert: {
+          action: string
+          actor_id: string
+          created_at?: string
+          details?: Json
+          id?: string
+          target_id?: string | null
+          target_type?: string | null
+        }
+        Update: {
+          action?: string
+          actor_id?: string
+          created_at?: string
+          details?: Json
+          id?: string
+          target_id?: string | null
+          target_type?: string | null
+        }
+        Relationships: []
+      }
       channel_messages: {
         Row: {
           channel_id: string
@@ -379,6 +409,30 @@ export type Database = {
         }
         Relationships: []
       }
+      keyword_filters: {
+        Row: {
+          created_at: string
+          created_by: string
+          id: string
+          pattern: string
+          severity: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          id?: string
+          pattern: string
+          severity?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          pattern?: string
+          severity?: string
+        }
+        Relationships: []
+      }
       message_reactions: {
         Row: {
           created_at: string
@@ -476,6 +530,39 @@ export type Database = {
           },
         ]
       }
+      platform_announcements: {
+        Row: {
+          active: boolean
+          body: string
+          created_at: string
+          created_by: string
+          id: string
+          pinned: boolean
+          severity: string
+          title: string
+        }
+        Insert: {
+          active?: boolean
+          body: string
+          created_at?: string
+          created_by: string
+          id?: string
+          pinned?: boolean
+          severity?: string
+          title: string
+        }
+        Update: {
+          active?: boolean
+          body?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          pinned?: boolean
+          severity?: string
+          title?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -533,6 +620,36 @@ export type Database = {
         }
         Relationships: []
       }
+      user_bans: {
+        Row: {
+          banned_by: string
+          created_at: string
+          expires_at: string | null
+          id: string
+          reason: string
+          severity: string
+          user_id: string
+        }
+        Insert: {
+          banned_by: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          reason?: string
+          severity?: string
+          user_id: string
+        }
+        Update: {
+          banned_by?: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          reason?: string
+          severity?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_blocks: {
         Row: {
           blocked_user_id: string
@@ -572,11 +689,47 @@ export type Database = {
         }
         Relationships: []
       }
+      user_warnings: {
+        Row: {
+          acknowledged: boolean
+          created_at: string
+          id: string
+          issued_by: string
+          reason: string
+          user_id: string
+        }
+        Insert: {
+          acknowledged?: boolean
+          created_at?: string
+          id?: string
+          issued_by: string
+          reason: string
+          user_id: string
+        }
+        Update: {
+          acknowledged?: boolean
+          created_at?: string
+          id?: string
+          issued_by?: string
+          reason?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      admin_ban_user: {
+        Args: {
+          _hours?: number
+          _reason: string
+          _severity?: string
+          _user_id: string
+        }
+        Returns: undefined
+      }
       admin_delete_channel_message: {
         Args: { _message_id: string }
         Returns: undefined
@@ -585,8 +738,19 @@ export type Database = {
         Args: { _message_id: string }
         Returns: undefined
       }
+      admin_delete_user_content: {
+        Args: { _user_id: string }
+        Returns: undefined
+      }
       admin_grant_admin: { Args: { _user_id: string }; Returns: undefined }
+      admin_grant_moderator: { Args: { _user_id: string }; Returns: undefined }
       admin_revoke_admin: { Args: { _user_id: string }; Returns: undefined }
+      admin_revoke_moderator: { Args: { _user_id: string }; Returns: undefined }
+      admin_unban_user: { Args: { _user_id: string }; Returns: undefined }
+      admin_warn_user: {
+        Args: { _reason: string; _user_id: string }
+        Returns: undefined
+      }
       channel_class: { Args: { _channel_id: string }; Returns: string }
       channel_is_announcements: {
         Args: { _channel_id: string }
@@ -607,6 +771,8 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_admin_or_owner: { Args: { _user_id: string }; Returns: boolean }
+      is_banned: { Args: { _user_id: string }; Returns: boolean }
       is_class_admin: {
         Args: { _class_id: string; _user_id: string }
         Returns: boolean
@@ -621,6 +787,15 @@ export type Database = {
       }
       is_owner: { Args: { _user_id: string }; Returns: boolean }
       join_class: { Args: { _code: string }; Returns: string }
+      log_audit: {
+        Args: {
+          _action: string
+          _details: Json
+          _target_id: string
+          _target_type: string
+        }
+        Returns: undefined
+      }
       mark_announcement_read: {
         Args: { _announcement_id: string }
         Returns: undefined
@@ -630,6 +805,7 @@ export type Database = {
         Args: { _conversation_id: string }
         Returns: undefined
       }
+      owner_stats: { Args: never; Returns: Json }
       toggle_block: { Args: { _blocked_user_id: string }; Returns: boolean }
       toggle_channel_reaction: {
         Args: { _emoji: string; _message_id: string }
@@ -644,7 +820,7 @@ export type Database = {
     }
     Enums: {
       announcement_severity: "normal" | "important" | "critical"
-      app_role: "owner" | "admin"
+      app_role: "owner" | "admin" | "moderator"
       class_role: "admin" | "student"
     }
     CompositeTypes: {
@@ -774,7 +950,7 @@ export const Constants = {
   public: {
     Enums: {
       announcement_severity: ["normal", "important", "critical"],
-      app_role: ["owner", "admin"],
+      app_role: ["owner", "admin", "moderator"],
       class_role: ["admin", "student"],
     },
   },
