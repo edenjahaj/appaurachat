@@ -8,8 +8,8 @@ export const Route = createFileRoute("/app/")({
 
 function AppHome() {
   return (
-    <div className="flex flex-1 min-w-0">
-      <div className="w-full md:w-[360px] border-r border-border flex flex-col">
+    <div className="flex flex-1 min-w-0 min-h-0 overflow-hidden">
+      <div className="w-full md:w-[360px] border-r border-border flex flex-col min-h-0">
         <ConversationList />
       </div>
       <div className="hidden md:flex flex-1 items-center justify-center bg-[image:linear-gradient(180deg,var(--color-background),var(--color-secondary))]">
