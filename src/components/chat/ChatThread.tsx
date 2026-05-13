@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from "react";
+import { useEffect, useRef, useState, type Dispatch, type SetStateAction, type FormEvent } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
@@ -46,6 +46,7 @@ export function ChatThread({ conversationId }: { conversationId: string }) {
   const channelRef = useRef<RealtimeChannel | null>(null);
   const typingTimeoutRef = useRef<Record<string, number>>({});
   const pendingImagePreviewRef = useRef<string | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const isNearBottomRef = useRef(true);
   const oldestRef = useRef<string | null>(null);
   const [hasMore, setHasMore] = useState(true);
@@ -81,6 +82,18 @@ export function ChatThread({ conversationId }: { conversationId: string }) {
       setUnreadCount(0);
       setShowJump(false);
     });
+  };
+
+  const resizeComposer = () => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+    textarea.style.height = "auto";
+    textarea.style.height = `${Math.min(textarea.scrollHeight, 144)}px`;
+  };
+
+  const handleComposerSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    void send();
   };
 
   const handleScroll = () => {
@@ -299,6 +312,7 @@ export function ChatThread({ conversationId }: { conversationId: string }) {
   const lastTypingSentRef = useRef(0);
   const onChange = (v: string) => {
     setText(v);
+    requestAnimationFrame(resizeComposer);
     if (v.length === 0) {
       broadcastTyping(false);
       lastTypingSentRef.current = 0;
@@ -342,6 +356,7 @@ export function ChatThread({ conversationId }: { conversationId: string }) {
     };
     setMessages((prev) => [...prev, optimistic]);
     setText("");
+    requestAnimationFrame(resizeComposer);
     clearPendingImage();
     broadcastTyping(false);
 
