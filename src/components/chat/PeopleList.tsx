@@ -54,7 +54,7 @@ export function PeopleList() {
     .sort((a, b) => Number(isFavorite(b.id)) - Number(isFavorite(a.id)));
 
   return (
-    <div>
+    <div className="min-h-0 pb-6">
       <h1 className="text-3xl font-extrabold mb-1">People</h1>
       <p className="text-sm text-muted-foreground mb-5">Find someone to start chatting with.</p>
       <div className="relative mb-4">
@@ -74,7 +74,7 @@ export function PeopleList() {
           <p className="text-sm text-muted-foreground">No people yet. Invite a friend!</p>
         </div>
       ) : (
-        <div className="space-y-2">
+        <div className="space-y-2 pb-6">
           {filtered.map((p) => {
             const fav = isFavorite(p.id);
             return (
@@ -104,10 +104,11 @@ export function PeopleList() {
                 <button
                   onClick={() => openChat(p)}
                   disabled={opening === p.id}
-                  className="rounded-full bg-primary text-primary-foreground px-4 py-2 text-sm font-semibold flex items-center gap-2 disabled:opacity-50 hover:opacity-90"
+                  className="size-10 rounded-full bg-primary text-primary-foreground grid place-items-center disabled:opacity-50 hover:opacity-90 shrink-0 md:w-auto md:px-4 md:py-2 md:flex md:items-center md:gap-2"
+                  title="Message"
                 >
                   <MessageCircle className="size-4" />
-                  Message
+                  <span className="hidden md:inline text-sm font-semibold">Message</span>
                 </button>
               </div>
             );
