@@ -479,7 +479,7 @@ export function ChatThread({ conversationId }: { conversationId: string }) {
       <div
         ref={scrollRef}
         onScroll={handleScroll}
-        className="relative flex-1 min-h-0 overflow-y-auto scroll-thin scroll-smooth-y px-3 md:px-6 py-4 bg-[image:linear-gradient(180deg,var(--color-background),var(--color-secondary))]"
+        className="relative flex-1 min-h-0 overflow-y-auto overscroll-contain scroll-thin scroll-smooth-y px-3 md:px-6 py-4 bg-[image:linear-gradient(180deg,var(--color-background),var(--color-secondary))]"
         style={{ overflowAnchor: "none" }}
       >
         {loadingMore && (
@@ -527,7 +527,7 @@ export function ChatThread({ conversationId }: { conversationId: string }) {
       {reportTarget && <ReportDialog messageId={reportTarget} scope="dm" onClose={() => setReportTarget(null)} />}
 
       {/* Composer */}
-      <div className="border-t border-border bg-card px-3 md:px-6 py-3 pb-[max(env(safe-area-inset-bottom),0.75rem)]">
+      <div className="shrink-0 border-t border-border bg-card px-3 md:px-6 py-3 pb-[max(env(safe-area-inset-bottom),0.75rem)]">
         {pendingImage && (
           <div className="mb-2 relative inline-block">
             <img src={pendingImage.preview} alt="preview" className="h-24 rounded-xl object-cover" />
@@ -540,10 +540,7 @@ export function ChatThread({ conversationId }: { conversationId: string }) {
             </button>
           </div>
         )}
-        <form
-          onSubmit={(e) => { e.preventDefault(); send(); }}
-          className="flex items-end gap-2"
-        >
+        <form onSubmit={handleComposerSubmit} className="flex items-end gap-2">
           <input
             ref={fileInputRef}
             type="file"
@@ -560,14 +557,16 @@ export function ChatThread({ conversationId }: { conversationId: string }) {
             <ImagePlus className="size-5" />
           </button>
           <textarea
+            ref={textareaRef}
             value={text}
             onChange={(e) => onChange(e.target.value)}
+            onFocus={() => scrollToBottom()}
             onKeyDown={(e) => {
               if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); }
             }}
             rows={1}
             placeholder="Message"
-            className="flex-1 resize-none rounded-2xl bg-secondary px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring max-h-32"
+            className="flex-1 min-h-11 max-h-36 overflow-y-auto resize-none rounded-2xl bg-secondary px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
           />
           <button
             type="submit"
