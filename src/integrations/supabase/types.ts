@@ -644,7 +644,7 @@ export type Database = {
     }
     Enums: {
       announcement_severity: "normal" | "important" | "critical"
-      app_role: "owner" | "admin"
+      app_role: "owner" | "admin" | "moderator"
       class_role: "admin" | "student"
     }
     CompositeTypes: {
@@ -774,7 +774,7 @@ export const Constants = {
   public: {
     Enums: {
       announcement_severity: ["normal", "important", "critical"],
-      app_role: ["owner", "admin"],
+      app_role: ["owner", "admin", "moderator"],
       class_role: ["admin", "student"],
     },
   },
