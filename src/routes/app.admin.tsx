@@ -277,7 +277,7 @@ function BanDialog({ person, onClose }: { person: Person; onClose: () => void })
     setBusy(true);
     const { error } = await supabase.rpc("admin_ban_user", {
       _user_id: person.id, _reason: reason || "", _severity: severity,
-      _hours: hours ? parseInt(hours, 10) : null,
+      _hours: hours ? parseInt(hours, 10) : undefined,
     });
     setBusy(false);
     if (error) return toast.error(error.message);
