@@ -551,16 +551,48 @@ export type Database = {
         }
         Relationships: []
       }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      admin_delete_channel_message: {
+        Args: { _message_id: string }
+        Returns: undefined
+      }
+      admin_delete_message: {
+        Args: { _message_id: string }
+        Returns: undefined
+      }
+      admin_grant_admin: { Args: { _user_id: string }; Returns: undefined }
+      admin_revoke_admin: { Args: { _user_id: string }; Returns: undefined }
       channel_class: { Args: { _channel_id: string }; Returns: string }
       channel_is_announcements: {
         Args: { _channel_id: string }
         Returns: boolean
       }
+      claim_owner: { Args: never; Returns: boolean }
       create_class: { Args: { _name: string }; Returns: string }
       create_group: {
         Args: { _member_ids: string[]; _name: string }
@@ -568,6 +600,13 @@ export type Database = {
       }
       gen_join_code: { Args: never; Returns: string }
       get_or_create_dm: { Args: { _other_user_id: string }; Returns: string }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
       is_class_admin: {
         Args: { _class_id: string; _user_id: string }
         Returns: boolean
@@ -580,6 +619,7 @@ export type Database = {
         Args: { _conversation_id: string; _user_id: string }
         Returns: boolean
       }
+      is_owner: { Args: { _user_id: string }; Returns: boolean }
       join_class: { Args: { _code: string }; Returns: string }
       mark_announcement_read: {
         Args: { _announcement_id: string }
@@ -604,6 +644,7 @@ export type Database = {
     }
     Enums: {
       announcement_severity: "normal" | "important" | "critical"
+      app_role: "owner" | "admin"
       class_role: "admin" | "student"
     }
     CompositeTypes: {
@@ -733,6 +774,7 @@ export const Constants = {
   public: {
     Enums: {
       announcement_severity: ["normal", "important", "critical"],
+      app_role: ["owner", "admin"],
       class_role: ["admin", "student"],
     },
   },

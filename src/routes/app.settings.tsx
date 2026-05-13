@@ -2,10 +2,11 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useAuth } from "@/lib/auth-context";
 import { useTheme } from "@/lib/theme-context";
 import { Avatar } from "@/components/chat/Avatar";
-import { Sun, Moon, Monitor, User as UserIcon, Bell, BellOff, LogOut, ChevronRight, Volume2, VolumeX, Info, Shield, Sparkles } from "lucide-react";
+import { Sun, Moon, Monitor, User as UserIcon, Bell, BellOff, LogOut, ChevronRight, Volume2, VolumeX, Info, Shield, Sparkles, Crown } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { showUpdateAgain, CURRENT_UPDATE } from "@/components/UpdateAnnouncement";
+import { supabase } from "@/integrations/supabase/client";
 
 const SOUND_KEY = "aura.sound";
 const NOTIF_KEY = "aura.notif";
@@ -15,15 +16,24 @@ export const Route = createFileRoute("/app/settings")({
 });
 
 function SettingsPage() {
-  const { profile, signOut } = useAuth();
+  const { profile, signOut, user } = useAuth();
   const { theme, setTheme } = useTheme();
   const [sound, setSound] = useState(true);
   const [notif, setNotif] = useState(true);
+  const [isOwner, setIsOwner] = useState(false);
+  const [ownerExists, setOwnerExists] = useState(true);
 
   useEffect(() => {
     setSound(localStorage.getItem(SOUND_KEY) !== "0");
     setNotif(localStorage.getItem(NOTIF_KEY) !== "0");
-  }, []);
+    if (!user) return;
+    (async () => {
+      const { data } = await supabase.from("user_roles").select("role").eq("user_id", user.id);
+      setIsOwner((data ?? []).some((r) => r.role === "owner"));
+      const { count } = await supabase.from("user_roles").select("id", { count: "exact", head: true }).eq("role", "owner");
+      setOwnerExists((count ?? 0) > 0);
+    })();
+  }, [user?.id]);
 
   const toggleSound = () => {
     const v = !sound; setSound(v); localStorage.setItem(SOUND_KEY, v ? "1" : "0");
@@ -76,6 +86,12 @@ function SettingsPage() {
             <Toggle on={sound} onClick={toggleSound} />
           </Row>
         </Section>
+
+        {(isOwner || !ownerExists) && (
+          <Section title="Owner">
+            <LinkRow to="/app/admin" icon={Crown} label={isOwner ? "Owner panel" : "Claim ownership"} />
+          </Section>
+        )}
 
         <Section title="Account">
           <LinkRow to="/app/profile" icon={UserIcon} label="Edit profile" />

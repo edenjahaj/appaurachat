@@ -18,6 +18,7 @@ import { Route as AppSettingsRouteImport } from './routes/app.settings'
 import { Route as AppProfileRouteImport } from './routes/app.profile'
 import { Route as AppPeopleRouteImport } from './routes/app.people'
 import { Route as AppClsRouteImport } from './routes/app.cls'
+import { Route as AppAdminRouteImport } from './routes/app.admin'
 import { Route as AppClsClassIdRouteImport } from './routes/app.cls.$classId'
 import { Route as AppCConversationIdRouteImport } from './routes/app.c.$conversationId'
 import { Route as AppClsClassIdIndexRouteImport } from './routes/app.cls.$classId.index'
@@ -68,6 +69,11 @@ const AppClsRoute = AppClsRouteImport.update({
   path: '/cls',
   getParentRoute: () => AppRoute,
 } as any)
+const AppAdminRoute = AppAdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppClsClassIdRoute = AppClsClassIdRouteImport.update({
   id: '/$classId',
   path: '/$classId',
@@ -94,6 +100,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/app': typeof AppRouteWithChildren
   '/auth': typeof AuthRoute
+  '/app/admin': typeof AppAdminRoute
   '/app/cls': typeof AppClsRouteWithChildren
   '/app/people': typeof AppPeopleRoute
   '/app/profile': typeof AppProfileRoute
@@ -108,6 +115,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/app/admin': typeof AppAdminRoute
   '/app/cls': typeof AppClsRouteWithChildren
   '/app/people': typeof AppPeopleRoute
   '/app/profile': typeof AppProfileRoute
@@ -123,6 +131,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/app': typeof AppRouteWithChildren
   '/auth': typeof AuthRoute
+  '/app/admin': typeof AppAdminRoute
   '/app/cls': typeof AppClsRouteWithChildren
   '/app/people': typeof AppPeopleRoute
   '/app/profile': typeof AppProfileRoute
@@ -140,6 +149,7 @@ export interface FileRouteTypes {
     | '/'
     | '/app'
     | '/auth'
+    | '/app/admin'
     | '/app/cls'
     | '/app/people'
     | '/app/profile'
@@ -154,6 +164,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/auth'
+    | '/app/admin'
     | '/app/cls'
     | '/app/people'
     | '/app/profile'
@@ -168,6 +179,7 @@ export interface FileRouteTypes {
     | '/'
     | '/app'
     | '/auth'
+    | '/app/admin'
     | '/app/cls'
     | '/app/people'
     | '/app/profile'
@@ -251,6 +263,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppClsRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/admin': {
+      id: '/app/admin'
+      path: '/admin'
+      fullPath: '/app/admin'
+      preLoaderRoute: typeof AppAdminRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/cls/$classId': {
       id: '/app/cls/$classId'
       path: '/$classId'
@@ -308,6 +327,7 @@ const AppClsRouteWithChildren =
   AppClsRoute._addFileChildren(AppClsRouteChildren)
 
 interface AppRouteChildren {
+  AppAdminRoute: typeof AppAdminRoute
   AppClsRoute: typeof AppClsRouteWithChildren
   AppPeopleRoute: typeof AppPeopleRoute
   AppProfileRoute: typeof AppProfileRoute
@@ -318,6 +338,7 @@ interface AppRouteChildren {
 }
 
 const AppRouteChildren: AppRouteChildren = {
+  AppAdminRoute: AppAdminRoute,
   AppClsRoute: AppClsRouteWithChildren,
   AppPeopleRoute: AppPeopleRoute,
   AppProfileRoute: AppProfileRoute,
