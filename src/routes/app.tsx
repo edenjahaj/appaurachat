@@ -1,4 +1,4 @@
-import { createFileRoute, Outlet, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Outlet, useLocation, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { Sidebar } from "@/components/chat/Sidebar";
@@ -12,6 +12,8 @@ export const Route = createFileRoute("/app")({
 function AppLayout() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const isChatThread = location.pathname.startsWith("/app/c/");
 
   useEffect(() => {
     if (!loading && !user) navigate({ to: "/auth" });
@@ -28,10 +30,10 @@ function AppLayout() {
   return (
     <div className="h-[100dvh] w-screen flex bg-background overflow-hidden">
       <div className="hidden md:flex"><Sidebar /></div>
-      <main className="flex-1 min-w-0 flex flex-col pb-[60px] md:pb-0">
+      <main className={`flex-1 min-w-0 min-h-0 flex flex-col ${isChatThread ? "pb-0" : "pb-[60px] md:pb-0"}`}>
         <Outlet />
       </main>
-      <MobileBottomNav />
+      {!isChatThread && <MobileBottomNav />}
       <UpdateAnnouncement />
     </div>
   );
