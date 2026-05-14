@@ -6,6 +6,7 @@ import { Avatar } from "@/components/chat/Avatar";
 import {
   Crown, Shield, ShieldOff, Trash2, Search, Loader2, LayoutDashboard, Users, Flag,
   ScrollText, Megaphone, Filter as FilterIcon, Ban, AlertTriangle, UserX, Plus, Pin, Power, ChevronRight,
+  LogOut, Send, Wrench,
 } from "lucide-react";
 import { toast } from "sonner";
 
