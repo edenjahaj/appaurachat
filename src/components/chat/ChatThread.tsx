@@ -58,6 +58,7 @@ export function ChatThread({ conversationId }: { conversationId: string }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [reportTarget, setReportTarget] = useState<string | null>(null);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [call, setCall] = useState<{ mode: "audio" | "video"; initiator: boolean; peerId: string } | null>(null);
   const PAGE_SIZE = 40;
 
   const clearPendingImage = () => {
