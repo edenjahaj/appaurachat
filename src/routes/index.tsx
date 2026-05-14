@@ -4,6 +4,18 @@ import { MessageCircle, Sparkles, Users, Zap } from "lucide-react";
 
 export const Route = createFileRoute("/")({
   component: Landing,
+  head: () => ({
+    meta: [
+      { title: "AURA — Real-time chat for friends, groups & classes" },
+      { name: "description", content: "AURA is a beautiful, real-time chat app. DMs, groups, class channels and 24-hour stories — built for speed." },
+      { property: "og:title", content: "AURA — Real-time chat for friends, groups & classes" },
+      { property: "og:description", content: "Beautiful, real-time messaging with DMs, groups, class channels and stories." },
+      { property: "og:url", content: "https://appaurachat.lovable.app/" },
+      { name: "twitter:title", content: "AURA — Real-time chat" },
+      { name: "twitter:description", content: "Beautiful, real-time messaging with DMs, groups, class channels and stories." },
+    ],
+    links: [{ rel: "canonical", href: "https://appaurachat.lovable.app/" }],
+  }),
 });
 
 function Landing() {
