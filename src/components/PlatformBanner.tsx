@@ -49,6 +49,9 @@ export function PlatformBanner() {
         .eq("user_id", user.id)
         .maybeSingle();
       if (b && (!b.expires_at || new Date(b.expires_at) > new Date())) setBan(b as any);
+
+      const { data: ms } = await supabase.from("platform_settings").select("value").eq("key", "maintenance").maybeSingle();
+      if (ms?.value && (ms.value as any).on) setMaint(ms.value as any);
     })();
   }, [user?.id]);
 
