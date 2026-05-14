@@ -147,15 +147,12 @@ export function CallDialog({ open, onClose, conversationId, selfId, peerId, peer
   );
 }
 
-/** Hook: listen for incoming-call ring broadcasts on a conversation */
-export function useIncomingCallListener(conversationId: string | null, selfId: string | null, onRing: (peerId: string, mode: "audio" | "video") => void) {
+/** Component: listen for incoming-call ring broadcasts on a conversation */
+export function CallRingListener({ conversationId, selfId, onRing }: { conversationId: string; selfId: string | null; onRing: (peerId: string, mode: "audio" | "video") => void }) {
   useEffect(() => {
     if (!conversationId || !selfId) return;
     const ch = supabase.channel(`call:${conversationId}`, { config: { broadcast: { self: false } } });
     ch.on("broadcast", { event: "sig" }, ({ payload }) => {
-      if (payload?.type === "ring" && payload.to !== selfId && payload.from !== selfId) {
-        // ring is broadcast (no specific to), peer != me => incoming
-      }
       if (payload?.type === "ring" && payload.from !== selfId) {
         onRing(payload.from, payload.payload?.mode ?? "audio");
       }
@@ -163,4 +160,5 @@ export function useIncomingCallListener(conversationId: string | null, selfId: s
     ch.subscribe();
     return () => { supabase.removeChannel(ch); };
   }, [conversationId, selfId, onRing]);
+  return null;
 }
