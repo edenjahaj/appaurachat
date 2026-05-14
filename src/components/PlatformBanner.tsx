@@ -69,6 +69,12 @@ export function PlatformBanner() {
 
   return (
     <div className="flex flex-col gap-2 px-3 pt-3">
+      {maint && (
+        <div className="rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-700 dark:text-amber-300 p-3 flex items-start gap-3">
+          <AlertTriangle className="size-5 shrink-0 mt-0.5" />
+          <div className="text-sm flex-1"><div className="font-bold">Maintenance mode</div><div className="opacity-90">{maint.message}</div></div>
+        </div>
+      )}
       {ban && (
         <div className="rounded-2xl bg-destructive/10 border border-destructive/30 text-destructive p-3 flex items-start gap-3">
           <AlertOctagon className="size-5 shrink-0 mt-0.5" />
