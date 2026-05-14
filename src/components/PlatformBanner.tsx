@@ -65,7 +65,7 @@ export function PlatformBanner() {
   };
 
   const visible = items.filter((i) => i.pinned || !dismissed.has(i.id));
-  if (!ban && visible.length === 0 && warnings.length === 0) return null;
+  if (!ban && !maint && visible.length === 0 && warnings.length === 0) return null;
 
   return (
     <div className="flex flex-col gap-2 px-3 pt-3">
