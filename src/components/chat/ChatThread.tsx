@@ -538,6 +538,31 @@ export function ChatThread({ conversationId }: { conversationId: string }) {
 
       {reportTarget && <ReportDialog messageId={reportTarget} scope="dm" onClose={() => setReportTarget(null)} />}
 
+      {call && user && (
+        <CallDialog
+          open
+          onClose={() => setCall(null)}
+          conversationId={conversationId}
+          selfId={user.id}
+          peerId={call.peerId}
+          peerName={dmOther?.display_name ?? "Call"}
+          mode={call.mode}
+          initiator={call.initiator}
+        />
+      )}
+
+      <CallRingListener
+        conversationId={conversationId}
+        selfId={user?.id ?? null}
+        onRing={(peerId, mode) => {
+          if (call) return;
+          if (confirm(`${dmOther?.display_name ?? "Someone"} is calling (${mode}). Answer?`)) {
+            setCall({ mode, initiator: false, peerId });
+          }
+        }}
+      />
+
+
       {/* Composer */}
       <div className="shrink-0 border-t border-border bg-card px-3 md:px-6 py-3 pb-[max(env(safe-area-inset-bottom),0.75rem)]">
         {pendingImage && (
