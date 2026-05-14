@@ -210,12 +210,23 @@ function UsersTab({ meId }: { meId: string }) {
     if (error) return toast.error(error.message);
     toast.success("Content purged");
   };
-
-  return (
-    <div className="rounded-2xl bg-card border border-border p-3 md:p-4">
-      <div className="relative mb-3">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search by name or @username…"
+  const forceSignout = async (id: string) => {
+    if (!confirm("Force this user to sign out everywhere?")) return;
+    setBusy(id);
+    const { error } = await supabase.rpc("admin_force_signout", { _target: id });
+    setBusy(null);
+    if (error) return toast.error(error.message);
+    toast.success("Signed out everywhere");
+  };
+  const deleteAccount = async (id: string, name: string) => {
+    if (!confirm(`PERMANENTLY delete ${name}'s account and ALL their data? This cannot be undone.`)) return;
+    if (!confirm("Are you absolutely sure?")) return;
+    setBusy(id);
+    const { error } = await supabase.rpc("admin_delete_account", { _target: id });
+    setBusy(null);
+    if (error) return toast.error(error.message);
+    toast.success("Account deleted"); reload();
+  };
           className="w-full pl-9 pr-3 py-2.5 rounded-xl bg-secondary text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
       </div>
       <div className="space-y-1.5">
