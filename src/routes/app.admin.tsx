@@ -137,14 +137,67 @@ function OverviewTab() {
     { label: "Classes", value: stats.total_classes },
   ];
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-      {cards.map((c) => (
-        <div key={c.label} className={`rounded-2xl p-4 border ${c.danger ? "bg-destructive/5 border-destructive/30" : "bg-card border-border"}`}>
-          <div className="text-[11px] uppercase tracking-wider font-bold text-muted-foreground">{c.label}</div>
-          <div className={`text-2xl font-extrabold mt-1 ${c.danger ? "text-destructive" : ""}`}>{c.value ?? 0}</div>
-          {c.sub && <div className="text-xs text-muted-foreground mt-0.5">{c.sub}</div>}
+    <div className="space-y-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+        {cards.map((c) => (
+          <div key={c.label} className={`rounded-2xl p-4 border ${c.danger ? "bg-destructive/5 border-destructive/30" : "bg-card border-border"}`}>
+            <div className="text-[11px] uppercase tracking-wider font-bold text-muted-foreground">{c.label}</div>
+            <div className={`text-2xl font-extrabold mt-1 ${c.danger ? "text-destructive" : ""}`}>{c.value ?? 0}</div>
+            {c.sub && <div className="text-xs text-muted-foreground mt-0.5">{c.sub}</div>}
+          </div>
+        ))}
+      </div>
+      <OwnerTools />
+    </div>
+  );
+}
+
+function OwnerTools() {
+  const [msg, setMsg] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [maint, setMaint] = useState<{ on: boolean; message: string }>({ on: false, message: "Under maintenance" });
+  useEffect(() => { (async () => {
+    const { data } = await supabase.from("platform_settings").select("value").eq("key", "maintenance").maybeSingle();
+    if (data?.value) setMaint(data.value as any);
+  })(); }, []);
+  const broadcast = async () => {
+    if (!msg.trim()) return;
+    if (!confirm(`Send this DM to EVERY user?\n\n"${msg}"`)) return;
+    setBusy(true);
+    const { data, error } = await supabase.rpc("admin_broadcast_dm", { _content: msg });
+    setBusy(false);
+    if (error) return toast.error(error.message);
+    toast.success(`Sent to ${data} users`); setMsg("");
+  };
+  const toggleMaint = async () => {
+    setBusy(true);
+    const { error } = await supabase.rpc("admin_set_maintenance", { _on: !maint.on, _message: maint.message });
+    setBusy(false);
+    if (error) return toast.error(error.message);
+    setMaint((m) => ({ ...m, on: !m.on }));
+    toast.success(!maint.on ? "Maintenance ON" : "Maintenance OFF");
+  };
+  return (
+    <div className="rounded-2xl bg-card border border-border p-4 space-y-4">
+      <div className="flex items-center gap-2 font-bold"><Crown className="size-4 text-amber-500" /> Owner tools</div>
+      <div>
+        <div className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1.5 flex items-center gap-1.5"><Send className="size-3.5" /> Broadcast DM</div>
+        <textarea value={msg} onChange={(e) => setMsg(e.target.value)} rows={2} placeholder="Message to send to every user…"
+          className="w-full px-3 py-2 rounded-xl bg-secondary text-sm focus:outline-none focus:ring-2 focus:ring-ring resize-none" />
+        <button onClick={broadcast} disabled={busy || !msg.trim()} className="mt-2 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-bold disabled:opacity-50 inline-flex items-center gap-1.5">
+          {busy && <Loader2 className="size-3.5 animate-spin" />} Send to all users
+        </button>
+      </div>
+      <div className="flex items-center gap-3 pt-2 border-t border-border">
+        <Wrench className="size-4" />
+        <div className="flex-1">
+          <div className="text-sm font-semibold">Maintenance mode</div>
+          <div className="text-xs text-muted-foreground">{maint.on ? "ON — users see a maintenance banner" : "OFF"}</div>
         </div>
-      ))}
+        <button onClick={toggleMaint} disabled={busy} className={`px-4 py-2 rounded-xl text-sm font-bold disabled:opacity-50 ${maint.on ? "bg-destructive text-destructive-foreground" : "bg-secondary"}`}>
+          {maint.on ? "Turn OFF" : "Turn ON"}
+        </button>
+      </div>
     </div>
   );
 }
