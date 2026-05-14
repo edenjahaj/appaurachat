@@ -21,6 +21,7 @@ export function PlatformBanner() {
   });
   const [warnings, setWarnings] = useState<{ id: string; reason: string }[]>([]);
   const [ban, setBan] = useState<{ reason: string; expires_at: string | null; severity: string } | null>(null);
+  const [maint, setMaint] = useState<{ on: boolean; message: string } | null>(null);
 
   useEffect(() => {
     if (!user) return;
