@@ -11,7 +11,7 @@ import { toast } from "sonner";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 import { isMuted, isBlocked, toggleMute, toggleBlock } from "@/lib/moderation";
 import { ReportDialog } from "./ReportDialog";
-import { CallDialog } from "./CallDialog";
+import { CallDialog, CallRingListener } from "./CallDialog";
 
 interface Message {
   id: string;
