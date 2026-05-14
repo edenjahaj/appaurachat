@@ -13,6 +13,17 @@ const searchSchema = z.object({
 export const Route = createFileRoute("/auth")({
   validateSearch: searchSchema,
   component: AuthPage,
+  head: () => ({
+    meta: [
+      { title: "Sign in to AURA" },
+      { name: "description", content: "Sign in or create your AURA account to start chatting in real time." },
+      { property: "og:title", content: "Sign in to AURA" },
+      { property: "og:description", content: "Sign in or create your AURA account to start chatting." },
+      { property: "og:url", content: "https://appaurachat.lovable.app/auth" },
+      { name: "robots", content: "noindex" },
+    ],
+    links: [{ rel: "canonical", href: "https://appaurachat.lovable.app/auth" }],
+  }),
 });
 
 const signupSchema = z.object({
