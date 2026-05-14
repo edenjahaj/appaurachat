@@ -227,6 +227,12 @@ function UsersTab({ meId }: { meId: string }) {
     if (error) return toast.error(error.message);
     toast.success("Account deleted"); reload();
   };
+
+  return (
+    <div className="rounded-2xl bg-card border border-border p-3 md:p-4">
+      <div className="relative mb-3">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search by name or @username…"
           className="w-full pl-9 pr-3 py-2.5 rounded-xl bg-secondary text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
       </div>
       <div className="space-y-1.5">
