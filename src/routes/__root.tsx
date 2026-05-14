@@ -61,6 +61,28 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/e1b9ed42-bbaa-4696-ac2d-3846eca440f9/id-preview-4d588be4--627ee25f-f698-4929-8fc0-8fdbb19c5273.lovable.app-1778266928759.png" },
       { name: "twitter:card", content: "summary_large_image" },
       { property: "og:type", content: "website" },
+      { property: "og:site_name", content: "AURA" },
+    ],
+    scripts: [
+      {
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@graph": [
+            {
+              "@type": "Organization",
+              name: "AURA",
+              url: "https://appaurachat.lovable.app",
+              logo: "https://appaurachat.lovable.app/icon-512.png",
+            },
+            {
+              "@type": "WebSite",
+              name: "AURA",
+              url: "https://appaurachat.lovable.app",
+            },
+          ],
+        }),
+      },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
