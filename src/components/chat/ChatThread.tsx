@@ -451,7 +451,17 @@ export function ChatThread({ conversationId }: { conversationId: string }) {
             {typingNames.length > 0
               ? <span className="text-primary">typing…</span>
               : !convo?.is_group && others[0] && isOnline(others[0].id) ? <span className="text-emerald-600">Online</span> : subtitle}
-          </div>
+        </div>
+        {dmOther && (
+          <>
+            <button onClick={() => setCall({ mode: "audio", initiator: true, peerId: dmOther.id })} className="size-9 rounded-full grid place-items-center hover:bg-secondary" aria-label="Voice call">
+              <Phone className="size-5" />
+            </button>
+            <button onClick={() => setCall({ mode: "video", initiator: true, peerId: dmOther.id })} className="size-9 rounded-full grid place-items-center hover:bg-secondary" aria-label="Video call">
+              <Video className="size-5" />
+            </button>
+          </>
+        )}
         </div>
         <div className="relative">
           <button onClick={() => setMenuOpen((s) => !s)} className="size-9 rounded-full grid place-items-center hover:bg-secondary" aria-label="More">
