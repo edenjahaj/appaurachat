@@ -451,6 +451,7 @@ export function ChatThread({ conversationId }: { conversationId: string }) {
             {typingNames.length > 0
               ? <span className="text-primary">typing…</span>
               : !convo?.is_group && others[0] && isOnline(others[0].id) ? <span className="text-emerald-600">Online</span> : subtitle}
+          </div>
         </div>
         {dmOther && (
           <>
@@ -462,7 +463,6 @@ export function ChatThread({ conversationId }: { conversationId: string }) {
             </button>
           </>
         )}
-        </div>
         <div className="relative">
           <button onClick={() => setMenuOpen((s) => !s)} className="size-9 rounded-full grid place-items-center hover:bg-secondary" aria-label="More">
             <MoreVertical className="size-5" />
