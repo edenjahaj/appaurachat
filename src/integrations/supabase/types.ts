@@ -563,6 +563,27 @@ export type Database = {
         }
         Relationships: []
       }
+      platform_settings: {
+        Row: {
+          key: string
+          updated_at: string
+          updated_by: string | null
+          value: Json
+        }
+        Insert: {
+          key: string
+          updated_at?: string
+          updated_by?: string | null
+          value: Json
+        }
+        Update: {
+          key?: string
+          updated_at?: string
+          updated_by?: string | null
+          value?: Json
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -730,6 +751,8 @@ export type Database = {
         }
         Returns: undefined
       }
+      admin_broadcast_dm: { Args: { _content: string }; Returns: number }
+      admin_delete_account: { Args: { _target: string }; Returns: undefined }
       admin_delete_channel_message: {
         Args: { _message_id: string }
         Returns: undefined
@@ -742,10 +765,15 @@ export type Database = {
         Args: { _user_id: string }
         Returns: undefined
       }
+      admin_force_signout: { Args: { _target: string }; Returns: undefined }
       admin_grant_admin: { Args: { _user_id: string }; Returns: undefined }
       admin_grant_moderator: { Args: { _user_id: string }; Returns: undefined }
       admin_revoke_admin: { Args: { _user_id: string }; Returns: undefined }
       admin_revoke_moderator: { Args: { _user_id: string }; Returns: undefined }
+      admin_set_maintenance: {
+        Args: { _message?: string; _on: boolean }
+        Returns: undefined
+      }
       admin_unban_user: { Args: { _user_id: string }; Returns: undefined }
       admin_warn_user: {
         Args: { _reason: string; _user_id: string }
