@@ -1,0 +1,13 @@
+# AURA
+
+> AURA is a premium real-time chat web app: direct messages, group chats, classes (channels), 24-hour stories, reactions, and live presence.
+
+AURA focuses on instant messaging, private DMs, group conversations, classroom-style channels with announcements, and ephemeral stories. The marketing site lives at the homepage; the product itself is behind authentication and is not indexable.
+
+## Pages
+- [Home](/): Product overview, features, and sign-up call to action.
+- [Sign in / Sign up](/auth): Email and Google authentication for AURA.
+
+## Optional
+- [Sitemap](/sitemap.xml)
+- [Robots](/robots.txt)

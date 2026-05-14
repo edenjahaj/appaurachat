@@ -4,13 +4,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { useRealtime } from "@/lib/realtime-context";
 import { Avatar } from "./Avatar";
-import { Send, ArrowLeft, ImagePlus, X, Pencil, Trash2, MoreVertical, BellOff, Bell, Ban, Flag, ChevronDown } from "lucide-react";
+import { Send, ArrowLeft, ImagePlus, X, Pencil, Trash2, MoreVertical, BellOff, Bell, Ban, Flag, ChevronDown, Phone, Video } from "lucide-react";
 import { MessageReactions } from "./MessageReactions";
 import { format, isToday, isYesterday } from "date-fns";
 import { toast } from "sonner";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 import { isMuted, isBlocked, toggleMute, toggleBlock } from "@/lib/moderation";
 import { ReportDialog } from "./ReportDialog";
+import { CallDialog, CallRingListener } from "./CallDialog";
 
 interface Message {
   id: string;
@@ -57,6 +58,7 @@ export function ChatThread({ conversationId }: { conversationId: string }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [reportTarget, setReportTarget] = useState<string | null>(null);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [call, setCall] = useState<{ mode: "audio" | "video"; initiator: boolean; peerId: string } | null>(null);
   const PAGE_SIZE = 40;
 
   const clearPendingImage = () => {
@@ -451,6 +453,16 @@ export function ChatThread({ conversationId }: { conversationId: string }) {
               : !convo?.is_group && others[0] && isOnline(others[0].id) ? <span className="text-emerald-600">Online</span> : subtitle}
           </div>
         </div>
+        {dmOther && (
+          <>
+            <button onClick={() => setCall({ mode: "audio", initiator: true, peerId: dmOther.id })} className="size-9 rounded-full grid place-items-center hover:bg-secondary" aria-label="Voice call">
+              <Phone className="size-5" />
+            </button>
+            <button onClick={() => setCall({ mode: "video", initiator: true, peerId: dmOther.id })} className="size-9 rounded-full grid place-items-center hover:bg-secondary" aria-label="Video call">
+              <Video className="size-5" />
+            </button>
+          </>
+        )}
         <div className="relative">
           <button onClick={() => setMenuOpen((s) => !s)} className="size-9 rounded-full grid place-items-center hover:bg-secondary" aria-label="More">
             <MoreVertical className="size-5" />
@@ -525,6 +537,31 @@ export function ChatThread({ conversationId }: { conversationId: string }) {
       )}
 
       {reportTarget && <ReportDialog messageId={reportTarget} scope="dm" onClose={() => setReportTarget(null)} />}
+
+      {call && user && (
+        <CallDialog
+          open
+          onClose={() => setCall(null)}
+          conversationId={conversationId}
+          selfId={user.id}
+          peerId={call.peerId}
+          peerName={dmOther?.display_name ?? "Call"}
+          mode={call.mode}
+          initiator={call.initiator}
+        />
+      )}
+
+      <CallRingListener
+        conversationId={conversationId}
+        selfId={user?.id ?? null}
+        onRing={(peerId, mode) => {
+          if (call) return;
+          if (confirm(`${dmOther?.display_name ?? "Someone"} is calling (${mode}). Answer?`)) {
+            setCall({ mode, initiator: false, peerId });
+          }
+        }}
+      />
+
 
       {/* Composer */}
       <div className="shrink-0 border-t border-border bg-card px-3 md:px-6 py-3 pb-[max(env(safe-area-inset-bottom),0.75rem)]">

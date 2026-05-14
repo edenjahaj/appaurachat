@@ -21,6 +21,7 @@ export function PlatformBanner() {
   });
   const [warnings, setWarnings] = useState<{ id: string; reason: string }[]>([]);
   const [ban, setBan] = useState<{ reason: string; expires_at: string | null; severity: string } | null>(null);
+  const [maint, setMaint] = useState<{ on: boolean; message: string } | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -48,6 +49,9 @@ export function PlatformBanner() {
         .eq("user_id", user.id)
         .maybeSingle();
       if (b && (!b.expires_at || new Date(b.expires_at) > new Date())) setBan(b as any);
+
+      const { data: ms } = await supabase.from("platform_settings").select("value").eq("key", "maintenance").maybeSingle();
+      if (ms?.value && (ms.value as any).on) setMaint(ms.value as any);
     })();
   }, [user?.id]);
 
@@ -61,10 +65,16 @@ export function PlatformBanner() {
   };
 
   const visible = items.filter((i) => i.pinned || !dismissed.has(i.id));
-  if (!ban && visible.length === 0 && warnings.length === 0) return null;
+  if (!ban && !maint && visible.length === 0 && warnings.length === 0) return null;
 
   return (
     <div className="flex flex-col gap-2 px-3 pt-3">
+      {maint && (
+        <div className="rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-700 dark:text-amber-300 p-3 flex items-start gap-3">
+          <AlertTriangle className="size-5 shrink-0 mt-0.5" />
+          <div className="text-sm flex-1"><div className="font-bold">Maintenance mode</div><div className="opacity-90">{maint.message}</div></div>
+        </div>
+      )}
       {ban && (
         <div className="rounded-2xl bg-destructive/10 border border-destructive/30 text-destructive p-3 flex items-start gap-3">
           <AlertOctagon className="size-5 shrink-0 mt-0.5" />
