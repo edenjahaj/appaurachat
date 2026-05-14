@@ -272,6 +272,8 @@ function UsersTab({ meId }: { meId: string }) {
                     ? <Btn onClick={() => revoke(p.id, "moderator")} busy={busy === p.id} tone="danger"><ShieldOff className="size-3.5" /> Mod</Btn>
                     : <Btn onClick={() => grant(p.id, "moderator")} busy={busy === p.id}><Shield className="size-3.5" /> Mod</Btn>}
                   <Btn onClick={() => purge(p.id)} busy={busy === p.id} tone="danger"><UserX className="size-3.5" /> Purge</Btn>
+                  <Btn onClick={() => forceSignout(p.id)} busy={busy === p.id} tone="warn"><LogOut className="size-3.5" /> Sign out</Btn>
+                  <Btn onClick={() => deleteAccount(p.id, p.display_name)} busy={busy === p.id} tone="danger"><Trash2 className="size-3.5" /> Delete</Btn>
                 </div>
               )}
             </div>
